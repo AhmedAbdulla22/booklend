@@ -1,3 +1,4 @@
+
 import { Language } from './types';
 
 export const TRANSLATIONS = {
@@ -71,6 +72,7 @@ export const TRANSLATIONS = {
     demo_member: 'Demo Member',
     dashboard_overview: 'Dashboard Overview',
     total_revenue: 'Total Revenue',
+    monthly_revenue: 'Monthly Revenue',
     total_books: 'Total Books',
     low_stock: 'Low Stock Alert',
     quick_stats: 'Quick Stats',
@@ -109,6 +111,8 @@ export const TRANSLATIONS = {
     back_to_login: 'Back to Login',
     reset_email_sent: 'Password reset link sent to your email.',
     enter_email_reset: 'Enter your email to receive reset instructions.',
+    new_label: 'New',
+    growth_label: 'growth',
   },
   ar: {
     app_name: 'إعارة كتب',
@@ -180,6 +184,7 @@ export const TRANSLATIONS = {
     demo_member: 'تجربة كعضو',
     dashboard_overview: 'نظرة عامة',
     total_revenue: 'إجمالي الإيرادات',
+    monthly_revenue: 'إيرادات الشهر',
     total_books: 'إجمالي الكتب',
     low_stock: 'تنبيه المخزون المنخفض',
     quick_stats: 'إحصائيات سريعة',
@@ -218,6 +223,8 @@ export const TRANSLATIONS = {
     back_to_login: 'العودة لتسجيل الدخول',
     reset_email_sent: 'تم إرسال رابط إعادة التعيين إلى بريدك الإلكتروني.',
     enter_email_reset: 'أدخل بريدك الإلكتروني لاستلام تعليمات إعادة التعيين.',
+    new_label: 'جديد',
+    growth_label: 'نمو',
   },
   ku: {
     app_name: 'BookLend',
@@ -289,6 +296,7 @@ export const TRANSLATIONS = {
     demo_member: 'دێمۆی ئەندام',
     dashboard_overview: 'پوختەی داشبۆرد',
     total_revenue: 'کۆی داهات',
+    monthly_revenue: 'داهاتی مانگانە',
     total_books: 'کۆی کتێبەکان',
     low_stock: 'ئاگادارکردنەوەی کەمی کۆگا',
     quick_stats: 'ئاماری خێرا',
@@ -327,6 +335,8 @@ export const TRANSLATIONS = {
     back_to_login: 'گەڕانەوە بۆ چوونەژوورەوە',
     reset_email_sent: 'بەستەری ڕێکخستنەوە بۆ ئیمەیڵەکەت نێردرا.',
     enter_email_reset: 'ئیمەیڵەکەت بنووسە بۆ وەرگرتنی ڕێنماییەکانی ڕێکخستنەوە.',
+    new_label: 'نوێ',
+    growth_label: 'گەشە',
   }
 };
 
