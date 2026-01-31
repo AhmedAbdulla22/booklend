@@ -28,7 +28,11 @@ export const UserManagement = () => {
       const data = await db.getProfiles();
       setProfiles(data);
     } catch (error) {
-      console.error(error);
+      console.error("[UserManagement] Failed to fetch profiles from Supabase:", error);
+      setNotification({ 
+        message: "Error connecting to database. Please check console for details.", 
+        type: 'error' 
+      });
     } finally {
       setLoading(false);
     }
@@ -37,7 +41,6 @@ export const UserManagement = () => {
   const handleRoleToggle = async (user: Profile) => {
     const newRole = user.role === Role.ADMIN ? Role.MEMBER : Role.ADMIN;
     
-    // Prevent self-demotion if desired, but here we'll allow it with a warning
     if (user.role === Role.ADMIN) {
         const confirm = window.confirm("Are you sure you want to demote this administrator to a standard member?");
         if (!confirm) return;
@@ -47,12 +50,12 @@ export const UserManagement = () => {
       setUpdatingId(user.id);
       await db.updateUserRole(user.id, newRole);
       
-      // Update local state
       setProfiles(prev => prev.map(p => p.id === user.id ? { ...p, role: newRole } : p));
       
       setNotification({ message: `User ${user.full_name} is now a ${newRole}`, type: 'success' });
       setTimeout(() => setNotification(null), 3000);
     } catch (error) {
+      console.error("[UserManagement] Role update failed:", error);
       setNotification({ message: "Failed to update user role", type: 'error' });
     } finally {
       setUpdatingId(null);
