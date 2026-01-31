@@ -4,6 +4,7 @@ import { Login } from './pages/Login';
 import { Signup } from './pages/Signup';
 import { AdminDashboard } from './pages/AdminDashboard';
 import { MemberDashboard } from './pages/MemberDashboard';
+import { UserManagement } from './pages/UserManagement';
 import { ProfilePage } from './pages/ProfilePage';
 import { Layout } from './components/Layout';
 import { ProtectedRoute } from './components/ProtectedRoute';
@@ -50,6 +51,15 @@ export const AppRoutes = () => {
             element={
               <ProtectedRoute allowedRoles={[Role.ADMIN]}>
                 <AdminDashboard />
+              </ProtectedRoute>
+            } 
+          />
+          
+          <Route 
+            path="admin/users" 
+            element={
+              <ProtectedRoute allowedRoles={[Role.ADMIN]}>
+                <UserManagement />
               </ProtectedRoute>
             } 
           />

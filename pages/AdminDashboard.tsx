@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { LayoutDashboard, BookOpen, Clock, AlertTriangle, DollarSign, Activity, Filter, FileText, CheckCircle, Search, Plus, Edit2, ArrowUpRight, List } from 'lucide-react';
+import { LayoutDashboard, BookOpen, Clock, AlertTriangle, DollarSign, Activity, Filter, FileText, CheckCircle, Search, Plus, Edit2, ArrowUpRight, List, Users } from 'lucide-react';
 import { useLanguage } from '../context/LanguageContext';
 import { useAuth } from '../context/AuthContext';
 import { Button } from '../components/ui/Button';
@@ -47,14 +47,12 @@ export const AdminDashboard = () => {
       db.getBooks(),
       db.getActivityLogs()
     ]);
-    setLoans(fetchedLoans);
-    setBooks(fetchedBooks);
-    setLogs(fetchedLogs);
+    setLoans(fetchedLoans || []);
+    setBooks(fetchedBooks || []);
+    setLogs(fetchedLogs || []);
   };
 
   const handleLoanAction = async (id: string, action: string) => {
-    // 2. FEE LOGIC: Handled inside db.updateLoanStatus for 'return' action
-    // It calculates Late Penalty if (CurrentDate > DueDate)
     if (action === 'approve') {
       await db.updateLoanStatus(id, LoanStatus.ACTIVE);
     } else if (action === 'reject') {
@@ -68,14 +66,12 @@ export const AdminDashboard = () => {
   const handleSaveBook = async (bookData: Partial<Book>) => {
     if (editingBook) {
       await db.updateBook({ ...editingBook, ...bookData } as Book);
-      alert(t('success_update'));
     } else {
       await db.addBook({
         ...bookData,
         available_copies: bookData.total_copies || 0,
         image_url: bookData.image_url || CONSTANTS.DEFAULT_IMAGES.BOOK
       } as Book);
-      alert(t('success_create'));
     }
     setIsModalOpen(false);
     fetchData();
@@ -100,7 +96,7 @@ export const AdminDashboard = () => {
   );
   const lowStockBooks = books.filter(b => b.available_copies < 2);
 
-  const allGenres = Array.from(new Set([...GENRES, ...books.map(b => b.genre)])).sort();
+  const allGenres = Array.from(new Set([...GENRES, ...books.map(b => b.genre).filter(Boolean)])).sort();
 
   const filteredBooks = books.filter(b => 
     (genre === 'All' || b.genre === genre) &&
@@ -145,6 +141,9 @@ export const AdminDashboard = () => {
         <button className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${tab === 'books' ? 'bg-white dark:bg-slate-700 shadow-sm text-emerald-600 dark:text-emerald-400' : 'text-slate-600 dark:text-slate-400 hover:bg-white/50 dark:hover:bg-slate-700/50'}`} onClick={() => setTab('books')}>
           <div className="flex items-center gap-2"><BookOpen size={16} /> {t('manage_books')}</div>
         </button>
+        <button className={`px-4 py-2 rounded-lg text-sm font-medium transition-all text-slate-600 dark:text-slate-400 hover:bg-white/50 dark:hover:bg-slate-700/50`} onClick={() => navigate('/admin/users')}>
+          <div className="flex items-center gap-2"><Users size={16} /> Users</div>
+        </button>
         <button className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${tab === 'logs' ? 'bg-white dark:bg-slate-700 shadow-sm text-emerald-600 dark:text-emerald-400' : 'text-slate-600 dark:text-slate-400 hover:bg-white/50 dark:hover:bg-slate-700/50'}`} onClick={() => setTab('logs')}>
           <div className="flex items-center gap-2"><Activity size={16} /> {t('activity_logs')}</div>
         </button>
@@ -174,20 +173,6 @@ export const AdminDashboard = () => {
                          <div><p className="font-bold text-slate-700 dark:text-slate-200">{localize(loan.book, 'title')}</p><p className="text-xs text-slate-500 dark:text-slate-400">Req: {loan.user?.full_name}</p></div>
                       </div>
                       <Button variant="secondary" className="!text-xs !py-1" onClick={() => setTab('loans')}>Review</Button>
-                    </GlassCard>
-                  ))}
-                  {loans.filter(l => l.status === LoanStatus.OVERDUE || (l.status === LoanStatus.ACTIVE && new Date() > new Date(l.due_date))).slice(0, 3).map(loan => (
-                    <GlassCard key={loan.id} className="p-4 flex items-center justify-between border-red-100 dark:border-red-900/30 bg-red-50/30 dark:bg-red-900/10">
-                      <div className="flex items-center gap-3">
-                         <div className="p-2 bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 rounded-lg">
-                           <AlertTriangle size={18} />
-                         </div>
-                         <div>
-                           <p className="font-bold text-slate-700 dark:text-slate-200">{localize(loan.book, 'title')}</p>
-                           <p className="text-xs text-red-500 font-semibold">{t('overdue')}</p>
-                         </div>
-                      </div>
-                      <span className="text-xs font-bold text-slate-500 dark:text-slate-400">{new Date(loan.due_date).toLocaleDateString()}</span>
                     </GlassCard>
                   ))}
                 </div>
@@ -259,7 +244,7 @@ export const AdminDashboard = () => {
                <GlassCard key={book.id} className="p-4 flex flex-col md:flex-row items-center justify-between gap-4">
                  <div className="flex items-center gap-4 w-full md:w-auto">
                    <img src={book.image_url || CONSTANTS.DEFAULT_IMAGES.BOOK} alt="" className="w-16 h-24 object-cover rounded shadow-sm" />
-                   <div><h4 className="font-bold text-slate-800 dark:text-slate-100">{localize(book, 'title')}</h4><p className="text-sm text-slate-500">{localize(book, 'author')}</p></div>
+                   <div><h4 className="font-bold text-slate-800 dark:text-white">{localize(book, 'title')}</h4><p className="text-sm text-slate-500">{localize(book, 'author')}</p></div>
                  </div>
                  <div className="flex gap-2">
                     <Button variant="secondary" onClick={() => openEditModal(book)}><Edit2 size={16} /> Edit</Button>
@@ -278,7 +263,7 @@ export const AdminDashboard = () => {
                <div key={log.id} className="p-4 flex justify-between hover:bg-slate-50/50 dark:hover:bg-slate-800/50">
                   <div className="flex gap-3">
                     <Activity size={16} className="mt-1 text-slate-400" />
-                    <div><p className="text-sm font-bold">{log.action}</p><p className="text-xs text-slate-500">{log.details}</p></div>
+                    <div><p className="text-sm font-bold text-slate-800 dark:text-white">{log.action}</p><p className="text-xs text-slate-500">{log.details}</p></div>
                   </div>
                   <span className="text-xs text-slate-400 font-mono">{new Date(log.timestamp).toLocaleDateString()}</span>
                </div>
