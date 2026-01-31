@@ -1,6 +1,7 @@
+
 import React, { useState } from 'react';
 import { useOutletContext } from 'react-router-dom';
-import { Library, Clock } from 'lucide-react';
+import { Library, Clock, AlertCircle } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
 import { Button } from '../components/ui/Button';
@@ -25,23 +26,34 @@ export const MemberDashboard = () => {
   const [view, setView] = useState<'catalog' | 'loans'>('catalog');
   const [selectedBook, setSelectedBook] = useState<Book | null>(null);
   const [viewingBook, setViewingBook] = useState<Book | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleRentRequest = async (days: number) => {
     if (!selectedBook || !user) return;
+    
+    setIsSubmitting(true);
     try {
+      // Using the updated requestLoan function with better validation and logging
       await db.requestLoan(user.id, selectedBook.id, days);
       setSelectedBook(null);
       alert(t('success_rent'));
-      refreshLoans();
-    } catch (e) {
-      alert('Error requesting loan');
+      await refreshLoans();
+    } catch (e: any) {
+      console.error('Request Loan Failed:', e);
+      alert(`Error requesting loan: ${e.message || 'Unknown error'}. Please check console for details.`);
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
   const handleReturnBook = async (loanId: string) => {
-    await db.updateLoanStatus(loanId, LoanStatus.RETURNED);
-    alert(t('success_return'));
-    refreshLoans();
+    try {
+      await db.updateLoanStatus(loanId, LoanStatus.RETURNED);
+      alert(t('success_return'));
+      await refreshLoans();
+    } catch (e: any) {
+      alert(`Error returning book: ${e.message}`);
+    }
   };
 
   if (!user) return null;
@@ -84,11 +96,13 @@ export const MemberDashboard = () => {
         />
       )}
 
-      <RentalModal 
-        book={selectedBook} 
-        onClose={() => setSelectedBook(null)} 
-        onConfirm={handleRentRequest} 
-      />
+      {selectedBook && (
+        <RentalModal 
+          book={selectedBook} 
+          onClose={() => !isSubmitting && setSelectedBook(null)} 
+          onConfirm={handleRentRequest} 
+        />
+      )}
 
       <BookDetailsModal 
         book={viewingBook} 

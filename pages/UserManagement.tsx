@@ -86,7 +86,7 @@ export const UserManagement = () => {
             </Button>
             <h1 className="text-2xl font-bold text-slate-800 dark:text-white flex items-center gap-2">
                 <Users className="text-emerald-500" />
-                User Management
+                {t('recent_activity')}
             </h1>
         </div>
         <div className="relative w-full max-w-xs">
@@ -153,11 +153,11 @@ export const UserManagement = () => {
                         <div className="flex gap-2">
                           {p.role === Role.ADMIN ? (
                             <Badge color="bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400 text-[10px]">
-                               <Shield size={10} className="inline mr-1" /> Admin
+                               <Shield size={10} className="inline mr-1" /> {t('role_admin')}
                             </Badge>
                           ) : (
                             <Badge color="bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400 text-[10px]">
-                               <User size={10} className="inline mr-1" /> Member
+                               <User size={10} className="inline mr-1" /> {t('role_member')}
                             </Badge>
                           )}
                           <Badge color={activity === 'active' ? 'bg-green-100 text-green-700 dark:bg-green-900/30 text-[10px]' : 'bg-slate-100 text-slate-400 dark:bg-slate-800 text-[10px]'}>
@@ -177,7 +177,7 @@ export const UserManagement = () => {
                           {updatingId === p.id ? (
                             <><Loader2 size={14} className="animate-spin" /> Processing...</>
                           ) : (
-                            <>{p.role === Role.ADMIN ? 'Demote to Member' : 'Promote to Admin'}</>
+                            <>{p.role === Role.ADMIN ? t('demote_member') : t('promote_admin')}</>
                           )}
                         </Button>
                       </MotionDiv>

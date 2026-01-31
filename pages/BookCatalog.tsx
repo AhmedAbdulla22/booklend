@@ -9,7 +9,7 @@ import { Badge } from '../components/ui/Badge';
 import { SkeletonCard } from '../components/ui/SkeletonCard';
 import { db } from '../services/supabaseClient';
 import { Book, GENRES, Profile } from '../types';
-import { CONSTANTS } from '../constants';
+import { CONSTANTS, TRANSLATIONS } from '../constants';
 
 // Fix for TypeScript inference issues with motion components
 const MotionDiv = motion.div;
@@ -53,6 +53,14 @@ export const BookCatalog = ({ user, onRent, onView }: { user: Profile, onRent: (
     return matchesGenre && matchesSearch;
   });
 
+  // Helper to localize genre strings for the filter bar
+  const getLocalizedGenreLabel = (g: string) => {
+    const key = `genre_${g.toLowerCase()}` as keyof typeof TRANSLATIONS['en'];
+    const translated = t(key);
+    // If the translation key doesn't exist (returns the key itself), use the original string
+    return translated === key ? g : translated;
+  };
+
   return (
     <div className="space-y-6 pb-20">
       {/* Filters */}
@@ -78,14 +86,13 @@ export const BookCatalog = ({ user, onRent, onView }: { user: Profile, onRent: (
               onClick={() => setGenre(g)}
               className="text-sm py-1.5 px-3 whitespace-nowrap"
             >
-              {g}
+              {getLocalizedGenreLabel(g)}
             </Button>
           ))}
         </div>
       </GlassCard>
 
       {/* Grid */}
-      {/* Fix: Using MotionDiv instead of motion.div directly to resolve TypeScript property missing errors */}
       <MotionDiv 
         variants={containerVariants}
         initial="hidden"
@@ -123,7 +130,9 @@ export const BookCatalog = ({ user, onRent, onView }: { user: Profile, onRent: (
                          </span>
                        </div>
                        <div className="absolute top-2 right-2">
-                         <Badge color="bg-white/90 text-indigo-700 backdrop-blur shadow-sm text-[10px] md:text-xs px-2">{localize(book, 'genre')}</Badge>
+                         <Badge color="bg-white/90 text-indigo-700 backdrop-blur shadow-sm text-[10px] md:text-xs px-2">
+                            {localize(book, 'genre')}
+                         </Badge>
                        </div>
                     </div>
 

@@ -106,6 +106,10 @@ const mockSupabaseClient = {
                         const user = mockProfiles.find(p => p.id === val);
                         return { data: user, error: user ? null : 'Not found' };
                     }
+                    if (table === 'books' && col === 'id') {
+                        const book = mockBooks.find(b => b.id === val);
+                        return { data: book, error: book ? null : 'Not found' };
+                    }
                     return { data: null, error: null };
                 },
                 order: () => ({
@@ -136,6 +140,19 @@ const mockSupabaseClient = {
                     }
                 })
             })
+        }),
+        insert: (payload: any) => ({
+          select: () => ({
+            single: async () => {
+              if (table === 'loans') {
+                const newLoan = { ...payload, id: Math.random().toString(36).substr(2, 9) };
+                mockLoans.unshift(newLoan);
+                saveMock('loans', mockLoans);
+                return { data: newLoan, error: null };
+              }
+              return { data: null, error: 'Table not mocked for insert' };
+            }
+          })
         })
     })
 };
@@ -198,26 +215,62 @@ export const db = {
      return [];
   },
 
+  /**
+   * Enhanced requestLoan function to fix 400 Bad Request issues.
+   * Calculates fees and due dates correctly, and logs detailed error info.
+   */
   requestLoan: async (userId: string, bookId: string, days: number): Promise<Loan> => {
+    // 1. Fetch book data to get the accurate daily_rate for fee calculation
+    let bookDailyRate = 0;
     if (isMock) {
-        const book = mockBooks.find(b => b.id === bookId);
-        if (!book) throw new Error('Not found');
-        const newLoan: Loan = {
-            id: Math.random().toString(36).substr(2, 9),
-            user_id: userId,
-            book_id: bookId,
-            start_date: new Date().toISOString(),
-            due_date: new Date(Date.now() + days * 24 * 60 * 60 * 1000).toISOString(),
-            total_fee: days * book.daily_rate,
-            penalty_fee: 0,
-            status: LoanStatus.PENDING
-        };
-        mockLoans.unshift(newLoan);
-        saveMock('loans', mockLoans);
-        return newLoan;
+      const book = mockBooks.find(b => b.id === bookId);
+      bookDailyRate = book?.daily_rate || 0;
+    } else {
+      const { data: book, error: bookError } = await supabase.from('books').select('daily_rate').eq('id', bookId).single();
+      if (bookError) throw new Error('Could not fetch book details for fee calculation');
+      bookDailyRate = book.daily_rate;
     }
-    const { data, error } = await supabase.from('loans').insert({ user_id: userId, book_id: bookId, status: LoanStatus.PENDING, total_fee: 0 }).select().single();
-    if (error) throw error;
+
+    // 2. Data Validation & Formatting
+    const startDate = new Date();
+    const dueDate = new Date();
+    dueDate.setDate(startDate.getDate() + days);
+    
+    const initialRentalFee = days * bookDailyRate;
+
+    // Ensure strictly formatted strings for timestamps and UUIDs
+    const payload = {
+      user_id: String(userId),
+      book_id: String(bookId),
+      status: String(LoanStatus.PENDING), // Ensures exact match for Postgres Enum
+      start_date: startDate.toISOString(),
+      due_date: dueDate.toISOString(),
+      total_fee: Number(initialRentalFee),
+      penalty_fee: 0
+    };
+
+    if (isMock) {
+      const { data, error } = await mockSupabaseClient.from('loans').insert(payload).select().single();
+      return data as Loan;
+    }
+
+    // 3. Perform Insert with detailed error logging
+    const { data, error } = await supabase
+      .from('loans')
+      .insert(payload)
+      .select()
+      .single();
+
+    if (error) {
+      // Detailed logging for debugging 400 Bad Request errors
+      console.error('CRITICAL: Supabase Loan Insertion Failed');
+      console.error('Message:', error.message);
+      console.error('Details:', error.details);
+      console.error('Hint:', error.hint);
+      console.error('Payload sent:', payload);
+      throw error;
+    }
+
     return data as Loan;
   },
 
