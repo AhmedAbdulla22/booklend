@@ -1,62 +1,72 @@
+
 import React, { useState, useEffect } from 'react';
 import { Users, Shield, User, Search, CheckCircle, AlertCircle, Loader2, ArrowLeft } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { motion, AnimatePresence } from 'framer-motion';
 import { db } from '../services/supabaseClient';
-import { Profile, Role } from '../types';
+import { Profile, Role, Loan, LoanStatus } from '../types';
 import { useLanguage } from '../context/LanguageContext';
 import { GlassCard } from '../components/ui/GlassCard';
 import { Button } from '../components/ui/Button';
 import { Badge } from '../components/ui/Badge';
+import { SkeletonRow } from '../components/ui/SkeletonCard';
 import { CONSTANTS } from '../constants';
+
+// Fix for TypeScript inference issues with motion components
+const MotionDiv = motion.div;
 
 export const UserManagement = () => {
   const { t } = useLanguage();
   const navigate = useNavigate();
   const [profiles, setProfiles] = useState<Profile[]>([]);
+  const [loans, setLoans] = useState<Loan[]>([]);
   const [loading, setLoading] = useState(true);
   const [updatingId, setUpdatingId] = useState<string | null>(null);
   const [search, setSearch] = useState('');
   const [notification, setNotification] = useState<{message: string, type: 'success' | 'error'} | null>(null);
 
   useEffect(() => {
-    loadProfiles();
+    loadData();
   }, []);
 
-  const loadProfiles = async () => {
+  const loadData = async () => {
     try {
       setLoading(true);
-      const data = await db.getProfiles();
-      setProfiles(data);
+      const [profileData, loanData] = await Promise.all([
+        db.getProfiles(),
+        db.getLoans()
+      ]);
+      setProfiles(profileData);
+      setLoans(loanData);
     } catch (error) {
-      console.error("[UserManagement] Failed to fetch profiles from Supabase:", error);
-      setNotification({ 
-        message: "Error connecting to database. Please check console for details.", 
-        type: 'error' 
-      });
+      setNotification({ message: "Error connecting to database.", type: 'error' });
     } finally {
       setLoading(false);
     }
   };
 
+  const getUserActivity = (userId: string) => {
+    const hasActiveLoan = loans.some(l => 
+      l.user_id === userId && 
+      (l.status === LoanStatus.ACTIVE || l.status === LoanStatus.OVERDUE)
+    );
+    return hasActiveLoan ? 'active' : 'idle';
+  };
+
   const handleRoleToggle = async (user: Profile) => {
     const newRole = user.role === Role.ADMIN ? Role.MEMBER : Role.ADMIN;
-    
     if (user.role === Role.ADMIN) {
-        const confirm = window.confirm("Are you sure you want to demote this administrator to a standard member?");
-        if (!confirm) return;
+        if (!window.confirm("Demote this administrator?")) return;
     }
 
     try {
       setUpdatingId(user.id);
       await db.updateUserRole(user.id, newRole);
-      
       setProfiles(prev => prev.map(p => p.id === user.id ? { ...p, role: newRole } : p));
-      
-      setNotification({ message: `User ${user.full_name} is now a ${newRole}`, type: 'success' });
+      setNotification({ message: `Role updated successfully`, type: 'success' });
       setTimeout(() => setNotification(null), 3000);
     } catch (error) {
-      console.error("[UserManagement] Role update failed:", error);
-      setNotification({ message: "Failed to update user role", type: 'error' });
+      setNotification({ message: "Update failed", type: 'error' });
     } finally {
       setUpdatingId(null);
     }
@@ -68,8 +78,8 @@ export const UserManagement = () => {
   );
 
   return (
-    <div className="space-y-6 animate-fade-in max-w-5xl mx-auto pb-10">
-      <div className="flex items-center justify-between gap-4">
+    <div className="space-y-6 max-w-5xl mx-auto pb-10">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div className="flex items-center gap-4">
             <Button variant="secondary" onClick={() => navigate('/admin')} className="!p-2 rounded-full">
                 <ArrowLeft size={20} />
@@ -91,14 +101,22 @@ export const UserManagement = () => {
         </div>
       </div>
 
-      {notification && (
-        <div className={`p-4 rounded-xl flex items-center gap-3 animate-slide-up ${
-            notification.type === 'success' ? 'bg-emerald-50 text-emerald-700 border border-emerald-100' : 'bg-red-50 text-red-700 border border-red-100'
-        }`}>
-            {notification.type === 'success' ? <CheckCircle size={20} /> : <AlertCircle size={20} />}
-            <p className="font-medium text-sm">{notification.message}</p>
-        </div>
-      )}
+      <AnimatePresence>
+        {notification && (
+          /* Fix: Using MotionDiv instead of motion.div directly to resolve TypeScript property missing errors */
+          <MotionDiv 
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            className={`p-4 rounded-xl flex items-center gap-3 ${
+              notification.type === 'success' ? 'bg-emerald-50 text-emerald-700 border border-emerald-100' : 'bg-red-50 text-red-700 border border-red-100'
+            }`}
+          >
+              {notification.type === 'success' ? <CheckCircle size={20} /> : <AlertCircle size={20} />}
+              <p className="font-medium text-sm">{notification.message}</p>
+          </MotionDiv>
+        )}
+      </AnimatePresence>
 
       <GlassCard className="overflow-hidden p-0">
         <div className="overflow-x-auto">
@@ -106,86 +124,71 @@ export const UserManagement = () => {
             <thead className="bg-slate-50/50 dark:bg-slate-800/50 border-b border-slate-100 dark:border-slate-800">
               <tr>
                 <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">User</th>
-                <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Current Role</th>
+                <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Status & Role</th>
                 <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider text-right">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
               {loading ? (
-                <tr>
-                    <td colSpan={3} className="px-6 py-12 text-center">
-                        <div className="flex flex-col items-center gap-2 text-slate-400">
-                            <Loader2 className="animate-spin" size={32} />
-                            <p>Loading users...</p>
+                Array(5).fill(0).map((_, i) => <SkeletonRow key={i} />)
+              ) : filteredProfiles.map((p) => {
+                const activity = getUserActivity(p.id);
+                return (
+                  <tr key={p.id} className="hover:bg-slate-50/30 dark:hover:bg-slate-800/20 transition-colors group">
+                    <td className="px-6 py-4">
+                      <div className="flex items-center gap-3">
+                        <img 
+                          src={p.avatar_url || `${CONSTANTS.DEFAULT_IMAGES.AVATAR_API}${encodeURIComponent(p.full_name)}`} 
+                          className="w-10 h-10 rounded-full border border-slate-200 dark:border-slate-700" 
+                          alt="" 
+                        />
+                        <div>
+                          <p className="font-bold text-slate-800 dark:text-white">{p.full_name}</p>
+                          <p className="text-xs text-slate-500">{p.email}</p>
                         </div>
-                    </td>
-                </tr>
-              ) : filteredProfiles.length === 0 ? (
-                <tr>
-                    <td colSpan={3} className="px-6 py-12 text-center text-slate-400 italic">
-                        No users found matching your search.
-                    </td>
-                </tr>
-              ) : filteredProfiles.map((p) => (
-                <tr key={p.id} className="hover:bg-slate-50/30 dark:hover:bg-slate-800/20 transition-colors group">
-                  <td className="px-6 py-4">
-                    <div className="flex items-center gap-3">
-                      <img 
-                        src={p.avatar_url || `${CONSTANTS.DEFAULT_IMAGES.AVATAR_API}${encodeURIComponent(p.full_name)}`} 
-                        className="w-10 h-10 rounded-full border border-slate-200 dark:border-slate-700" 
-                        alt="" 
-                      />
-                      <div>
-                        <p className="font-bold text-slate-800 dark:text-white">{p.full_name}</p>
-                        <p className="text-xs text-slate-500">{p.email}</p>
                       </div>
-                    </div>
-                  </td>
-                  <td className="px-6 py-4">
-                    <div className="flex items-center gap-2">
-                      {p.role === Role.ADMIN ? (
-                        <Badge color="bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400">
-                           <Shield size={12} className="inline mr-1" /> Administrator
-                        </Badge>
-                      ) : (
-                        <Badge color="bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400">
-                           <User size={12} className="inline mr-1" /> Member
-                        </Badge>
-                      )}
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 text-right">
-                    <Button 
-                        variant={p.role === Role.ADMIN ? 'secondary' : 'primary'} 
-                        className={`text-xs py-1.5 h-auto ${updatingId === p.id ? 'opacity-50 pointer-events-none' : ''}`}
-                        onClick={() => handleRoleToggle(p)}
-                        disabled={updatingId === p.id}
-                    >
-                      {updatingId === p.id ? (
-                        <>
-                            <Loader2 size={14} className="animate-spin" />
-                            Processing...
-                        </>
-                      ) : (
-                        <>
-                            {p.role === Role.ADMIN ? 'Demote to Member' : 'Promote to Admin'}
-                        </>
-                      )}
-                    </Button>
-                  </td>
-                </tr>
-              ))}
+                    </td>
+                    <td className="px-6 py-4">
+                      <div className="flex flex-col gap-1.5 items-start">
+                        <div className="flex gap-2">
+                          {p.role === Role.ADMIN ? (
+                            <Badge color="bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400 text-[10px]">
+                               <Shield size={10} className="inline mr-1" /> Admin
+                            </Badge>
+                          ) : (
+                            <Badge color="bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400 text-[10px]">
+                               <User size={10} className="inline mr-1" /> Member
+                            </Badge>
+                          )}
+                          <Badge color={activity === 'active' ? 'bg-green-100 text-green-700 dark:bg-green-900/30 text-[10px]' : 'bg-slate-100 text-slate-400 dark:bg-slate-800 text-[10px]'}>
+                            {activity === 'active' ? 'Active' : 'Idle'}
+                          </Badge>
+                        </div>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 text-right">
+                      <MotionDiv whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+                        <Button 
+                            variant={p.role === Role.ADMIN ? 'secondary' : 'primary'} 
+                            className={`text-xs py-1.5 h-auto ${updatingId === p.id ? 'opacity-50 pointer-events-none' : ''}`}
+                            onClick={() => handleRoleToggle(p)}
+                            disabled={updatingId === p.id}
+                        >
+                          {updatingId === p.id ? (
+                            <><Loader2 size={14} className="animate-spin" /> Processing...</>
+                          ) : (
+                            <>{p.role === Role.ADMIN ? 'Demote to Member' : 'Promote to Admin'}</>
+                          )}
+                        </Button>
+                      </MotionDiv>
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>
       </GlassCard>
-
-      <div className="p-4 bg-amber-50 dark:bg-amber-900/20 border border-amber-100 dark:border-amber-900/50 rounded-xl flex gap-3 text-amber-800 dark:text-amber-300">
-          <AlertCircle size={20} className="shrink-0" />
-          <p className="text-xs leading-relaxed">
-              <strong>Caution:</strong> Promoting a user to Admin grants them full access to manage books, loan requests, activity logs, and user roles. Only grant this access to trusted staff members.
-          </p>
-      </div>
     </div>
   );
 };

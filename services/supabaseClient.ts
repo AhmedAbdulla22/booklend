@@ -1,3 +1,4 @@
+
 import { createClient } from '@supabase/supabase-js';
 import { Book, Loan, LoanStatus, Profile, Role, ActivityLog } from '../types';
 import { CONSTANTS } from '../constants';
@@ -64,7 +65,6 @@ const INITIAL_BOOKS: Book[] = [
   }
 ];
 
-// --- ACTIVE DATA STATE ---
 let mockProfiles: Profile[] = loadMock('profiles', INITIAL_PROFILES);
 let mockBooks: Book[] = loadMock('books', INITIAL_BOOKS);
 let mockLoans: Loan[] = loadMock('loans', []);
@@ -73,16 +73,33 @@ let mockLogs: ActivityLog[] = loadMock('logs', []);
 // --- MOCK SUPABASE CLIENT ---
 const mockSupabaseClient = {
     auth: {
-        getSession: async () => ({ data: { session: null }, error: null }),
-        onAuthStateChange: (_cb: any) => ({ data: { subscription: { unsubscribe: () => {} } } }),
-        signInWithPassword: async () => ({ data: { user: null }, error: new Error("Use the db wrapper") }),
-        signOut: async () => ({ error: null }),
+        getSession: async () => {
+          const storedUser = localStorage.getItem('bl_mock_current_user');
+          if (storedUser) {
+            return { data: { session: { user: JSON.parse(storedUser) } }, error: null };
+          }
+          return { data: { session: null }, error: null };
+        },
+        onAuthStateChange: (cb: any) => {
+          return { data: { subscription: { unsubscribe: () => {} } } };
+        },
+        signInWithPassword: async ({ email, password }: any) => {
+          const user = mockProfiles.find(p => p.email === email);
+          if (user && (password === '123456' || password === 'admin')) {
+            localStorage.setItem('bl_mock_current_user', JSON.stringify(user));
+            return { data: { user }, error: null };
+          }
+          return { data: { user: null }, error: new Error("Invalid credentials") };
+        },
+        signOut: async () => {
+          localStorage.removeItem('bl_mock_current_user');
+          return { error: null };
+        },
         resetPasswordForEmail: async () => ({ error: null }),
-        // Added missing mock method
         signInWithOtp: async () => ({ error: null }),
     },
     from: (table: string) => ({
-        select: () => ({
+        select: (cols?: string) => ({
             eq: (col: string, val: string) => ({
                 single: async () => {
                     if (table === 'profiles' && col === 'id') {
@@ -90,8 +107,18 @@ const mockSupabaseClient = {
                         return { data: user, error: user ? null : 'Not found' };
                     }
                     return { data: null, error: null };
-                }
-            })
+                },
+                order: () => ({
+                  then: (cb: any) => cb({ data: [], error: null })
+                })
+            }),
+            order: (col: string, { ascending }: any) => {
+              let data: any[] = [];
+              if (table === 'books') data = [...mockBooks];
+              if (table === 'loans') data = [...mockLoans];
+              if (table === 'profiles') data = [...mockProfiles];
+              return { data, error: null };
+            }
         }),
         update: (updates: any) => ({
             eq: (col: string, val: string) => ({
@@ -113,7 +140,13 @@ const mockSupabaseClient = {
     })
 };
 
-export const supabase = isMock ? (mockSupabaseClient as any) : createClient(supabaseUrl, supabaseAnonKey);
+export const supabase = isMock 
+  ? (mockSupabaseClient as any) 
+  : createClient(supabaseUrl, supabaseAnonKey, {
+      auth: {
+        lock: async (name: string, acquireTimeout: number, fn: () => Promise<any>) => await fn(),
+      },
+    });
 
 export const db = {
   getBooks: async (): Promise<Book[]> => {
@@ -227,37 +260,20 @@ export const db = {
 
 export const auth = {
   signInWithPassword: async (email: string, password: string): Promise<Profile> => {
-    if (isMock) {
-        const user = mockProfiles.find(p => p.email === email);
-        if (user && (password === '123456' || password === 'admin')) return user;
-        throw new Error('Invalid credentials');
-    }
     const { data, error } = await supabase.auth.signInWithPassword({ email, password });
     if (error) throw error;
     const { data: profile } = await supabase.from('profiles').select('*').eq('id', data.user.id).single();
     return profile as Profile;
   },
-  // Fix: Added missing signIn method for magic link/OTP fallback logic in AuthContext.tsx
   signIn: async (email: string): Promise<void> => {
-    if (isMock) {
-        const user = mockProfiles.find(p => p.email === email);
-        if (!user) throw new Error('Invalid credentials');
-        return;
-    }
     const { error } = await supabase.auth.signInWithOtp({ email });
     if (error) throw error;
   },
   signUp: async (email: string, fullName: string, password?: string): Promise<Profile> => {
-    if (isMock) {
-        const newUser: Profile = { id: Math.random().toString(36).substr(2, 9), email, full_name: fullName, role: Role.MEMBER };
-        mockProfiles.push(newUser);
-        saveMock('profiles', mockProfiles);
-        return newUser;
-    }
     const { data, error } = await supabase.auth.signUp({ email, password: password || "12345678", options: { data: { full_name: fullName } } });
     if (error) throw error;
     return { id: data.user!.id, email, full_name: fullName, role: Role.MEMBER };
   },
-  signOut: async () => { if (!isMock) await supabase.auth.signOut(); },
-  resetPassword: async (email: string) => { if (!isMock) await supabase.auth.resetPasswordForEmail(email); }
+  signOut: async () => { await supabase.auth.signOut(); },
+  resetPassword: async (email: string) => { await supabase.auth.resetPasswordForEmail(email); }
 };
