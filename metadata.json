@@ -1,0 +1,5 @@
+{
+  "name": "BookLend",
+  "description": "A modern, glassmorphic library management system with dual-language support (English/Arabic), role-based access, and automated fee calculation.",
+  "requestFramePermissions": []
+}

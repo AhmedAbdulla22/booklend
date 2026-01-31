@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>BookLend Library</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Noto+Sans+Arabic:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script>
+      tailwind.config = {
+        darkMode: 'class',
+        theme: {
+          extend: {
+            fontFamily: {
+              sans: ['Inter', 'sans-serif'],
+              arabic: ['Noto Sans Arabic', 'sans-serif'],
+            },
+            colors: {
+              glass: {
+                100: 'rgba(255, 255, 255, 0.1)',
+                200: 'rgba(255, 255, 255, 0.2)',
+                300: 'rgba(255, 255, 255, 0.3)',
+                400: 'rgba(255, 255, 255, 0.4)',
+                border: 'rgba(255, 255, 255, 0.2)',
+                text: 'rgba(30, 41, 59, 0.9)',
+                primary: '#10b981', // Emerald 500
+              }
+            }
+          }
+        }
+      }
+    </script>
+    <style>
+      body {
+        /* Light mode: Subtle gray-green gradient */
+        background: linear-gradient(135deg, #ecfdf5 0%, #f0fdfa 100%);
+        min-height: 100vh;
+        transition: background-color 0.3s ease;
+      }
+      .dark body {
+        /* Dark mode: Deep slate/emerald */
+        background: linear-gradient(135deg, #020617 0%, #064e3b 100%);
+      }
+      /* Custom Scrollbar for Glass UI */
+      ::-webkit-scrollbar {
+        width: 8px;
+      }
+      ::-webkit-scrollbar-track {
+        background: transparent;
+      }
+      ::-webkit-scrollbar-thumb {
+        background: rgba(156, 163, 175, 0.5);
+        border-radius: 4px;
+      }
+      ::-webkit-scrollbar-thumb:hover {
+        background: rgba(107, 114, 128, 0.8);
+      }
+    </style>
+  <script type="importmap">
+{
+  "imports": {
+    "react": "https://esm.sh/react@18.3.1",
+    "react/": "https://esm.sh/react@18.3.1/",
+    "react-dom": "https://esm.sh/react-dom@18.3.1",
+    "react-dom/": "https://esm.sh/react-dom@18.3.1/",
+    "react-dom/client": "https://esm.sh/react-dom@18.3.1/client",
+    "lucide-react": "https://esm.sh/lucide-react@0.344.0?deps=react@18.3.1",
+    "@vitejs/plugin-react": "https://esm.sh/@vitejs/plugin-react@4.3.1",
+    "vite": "https://esm.sh/vite@5.3.4",
+    "react-router-dom": "https://esm.sh/react-router-dom@6.22.3?deps=react@18.3.1,react-dom@18.3.1",
+    "@supabase/supabase-js": "https://esm.sh/@supabase/supabase-js@^2.93.2"
+  }
+}
+</script>
+<link rel="stylesheet" href="/index.css">
+</head>
+  <body class="text-slate-800 dark:text-slate-100 transition-colors duration-300">
+    <div id="root"></div>
+    <script type="module" src="/index.tsx"></script>
+  </body>
+</html>
