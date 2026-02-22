@@ -1,6 +1,6 @@
-
 import React, { useState, useEffect } from 'react';
-import { Users, Shield, User, Search, CheckCircle, AlertCircle, Loader2, ArrowLeft } from 'lucide-react';
+// 1. ADDED Trash2 to the lucide-react imports
+import { Users, Shield, User, Search, CheckCircle, AlertCircle, Loader2, ArrowLeft, Trash2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { db } from '../services/supabaseClient';
@@ -12,7 +12,6 @@ import { Badge } from '../components/ui/Badge';
 import { SkeletonRow } from '../components/ui/SkeletonCard';
 import { CONSTANTS } from '../constants';
 
-// Fix for TypeScript inference issues with motion components
 const MotionDiv = motion.div;
 
 export const UserManagement = () => {
@@ -22,6 +21,8 @@ export const UserManagement = () => {
   const [loans, setLoans] = useState<Loan[]>([]);
   const [loading, setLoading] = useState(true);
   const [updatingId, setUpdatingId] = useState<string | null>(null);
+  // 2. ADDED deletingId state
+  const [deletingId, setDeletingId] = useState<string | null>(null);
   const [search, setSearch] = useState('');
   const [notification, setNotification] = useState<{message: string, type: 'success' | 'error'} | null>(null);
 
@@ -72,6 +73,29 @@ export const UserManagement = () => {
     }
   };
 
+  // 3. ADDED handleDeleteUser function
+  const handleDeleteUser = async (user: Profile) => {
+    if (user.role === Role.ADMIN) {
+      setNotification({ message: "Cannot delete an Admin user.", type: 'error' });
+      setTimeout(() => setNotification(null), 3000);
+      return;
+    }
+
+    if (!window.confirm(`Are you sure you want to delete ${user.full_name}? This action cannot be undone.`)) return;
+
+    try {
+      setDeletingId(user.id);
+      await db.deleteUser(user.id);
+      setProfiles(prev => prev.filter(p => p.id !== user.id));
+      setNotification({ message: "User deleted successfully", type: 'success' });
+      setTimeout(() => setNotification(null), 3000);
+    } catch (error) {
+      setNotification({ message: "Failed to delete user. Check database constraints.", type: 'error' });
+    } finally {
+      setDeletingId(null);
+    }
+  };
+
   const filteredProfiles = profiles.filter(p => 
     p.full_name.toLowerCase().includes(search.toLowerCase()) || 
     p.email.toLowerCase().includes(search.toLowerCase())
@@ -103,7 +127,6 @@ export const UserManagement = () => {
 
       <AnimatePresence>
         {notification && (
-          /* Fix: Using MotionDiv instead of motion.div directly to resolve TypeScript property missing errors */
           <MotionDiv 
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -167,20 +190,42 @@ export const UserManagement = () => {
                       </div>
                     </td>
                     <td className="px-6 py-4 text-right">
-                      <MotionDiv whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
-                        <Button 
-                            variant={p.role === Role.ADMIN ? 'secondary' : 'primary'} 
-                            className={`text-xs py-1.5 h-auto ${updatingId === p.id ? 'opacity-50 pointer-events-none' : ''}`}
-                            onClick={() => handleRoleToggle(p)}
-                            disabled={updatingId === p.id}
-                        >
-                          {updatingId === p.id ? (
-                            <><Loader2 size={14} className="animate-spin" /> Processing...</>
-                          ) : (
-                            <>{p.role === Role.ADMIN ? t('demote_member') : t('promote_admin')}</>
-                          )}
-                        </Button>
-                      </MotionDiv>
+                      {/* 4. UPDATED Action Buttons Layout */}
+                      <div className="flex items-center justify-end gap-2">
+                        <MotionDiv whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+                          <Button 
+                              variant={p.role === Role.ADMIN ? 'secondary' : 'primary'} 
+                              className={`text-xs py-1.5 h-auto ${updatingId === p.id ? 'opacity-50 pointer-events-none' : ''}`}
+                              onClick={() => handleRoleToggle(p)}
+                              disabled={updatingId === p.id || deletingId === p.id}
+                          >
+                            {updatingId === p.id ? (
+                              <><Loader2 size={14} className="animate-spin" /> Processing...</>
+                            ) : (
+                              <>{p.role === Role.ADMIN ? t('demote_member') : t('promote_admin')}</>
+                            )}
+                          </Button>
+                        </MotionDiv>
+
+                        {/* 5. ADDED Delete Button (Only visible if not admin) */}
+                        {p.role !== Role.ADMIN && (
+                          <MotionDiv whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+                            <Button 
+                              variant="secondary"
+                              className={`!p-1.5 h-auto border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700 ${deletingId === p.id ? 'opacity-50 pointer-events-none' : ''}`}
+                              onClick={() => handleDeleteUser(p)}
+                              disabled={deletingId === p.id || updatingId === p.id}
+                              title="Delete User"
+                            >
+                              {deletingId === p.id ? (
+                                <Loader2 size={16} className="animate-spin" />
+                              ) : (
+                                <Trash2 size={16} />
+                              )}
+                            </Button>
+                          </MotionDiv>
+                        )}
+                      </div>
                     </td>
                   </tr>
                 );

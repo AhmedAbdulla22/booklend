@@ -210,6 +210,27 @@ export const db = {
     if (error) throw error;
   },
 
+  deleteUser: async (userId: string): Promise<void> => {
+      if (isMock) {
+        const idx = mockProfiles.findIndex(p => p.id === userId);
+        if (idx !== -1) {
+          mockProfiles.splice(idx, 1);
+          saveMock('profiles', mockProfiles);
+        }
+        return;
+      }
+      
+      // Call the secure Postgres function
+      const { error } = await supabase.rpc('delete_user_by_admin', { 
+        target_user_id: userId 
+      });
+      
+      if (error) {
+        console.error("Failed to delete user:", error);
+        throw error;
+      }
+    },
+
   getActivityLogs: async (): Promise<ActivityLog[]> => {
      if (isMock) return [...mockLogs];
      return [];
