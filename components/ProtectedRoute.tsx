@@ -14,10 +14,10 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ allowedRoles, ch
   // 1. Loading State: Return spinner, DO NOT redirect yet
   if (loading) {
     return (
-      <div className="flex justify-center items-center h-screen w-full bg-slate-50 dark:bg-slate-900 transition-colors">
+      <div className="flex justify-center items-center h-screen w-full bg-gray-50 transition-colors">
         <div className="flex flex-col items-center gap-4">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-emerald-500"></div>
-          <p className="text-emerald-600 dark:text-emerald-400 font-medium animate-pulse">Loading...</p>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+          <p className="text-blue-600 font-medium animate-pulse">Loading...</p>
         </div>
       </div>
     );

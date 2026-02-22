@@ -59,16 +59,16 @@ export const Login: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-emerald-50 via-teal-50 to-emerald-100 dark:from-slate-950 dark:via-slate-900 dark:to-emerald-950/30">
-      <GlassCard className="w-full max-w-md p-8 animate-fade-in border-white/80 dark:border-slate-700">
+    <div className="min-h-screen flex items-center justify-center p-4 bg-gray-100">
+      <GlassCard className="w-full max-w-md p-8">
         <div className="flex flex-col items-center mb-8">
-          <div className="p-3 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-xl text-white mb-4 shadow-lg shadow-emerald-500/30">
+          <div className="p-3 bg-blue-600 rounded text-white mb-4">
             <Library size={32} />
           </div>
-          <h2 className="text-2xl font-bold text-slate-800 dark:text-white">
+          <h2 className="text-2xl font-bold text-gray-800">
             {view === 'login' ? t('app_name') : t('reset_password')}
           </h2>
-          <p className="text-slate-500 dark:text-slate-400">
+          <p className="text-gray-600">
             {view === 'login' ? t('welcome') : t('enter_email_reset')}
           </p>
         </div>
@@ -101,25 +101,25 @@ export const Login: React.FC = () => {
                         setError('');
                         setView('forgot_password');
                     }}
-                    className="text-xs text-emerald-600 dark:text-emerald-400 hover:underline"
+                    className="text-xs text-emerald-600 hover:underline"
                   >
                     {t('forgot_password')}
                   </button>
                 </div>
               </div>
               
-              {error && <p className="text-red-500 text-sm text-center font-medium bg-red-50 dark:bg-red-900/20 p-2 rounded">{error}</p>}
+              {error && <p className="text-red-500 text-sm text-center font-medium bg-red-50 p-2 rounded">{error}</p>}
 
               <Button fullWidth type="submit" className="mt-4" disabled={isLoading}>
                 {isLoading ? 'Loading...' : t('login')}
               </Button>
             </form>
 
-            <p className="mt-6 text-center text-sm text-slate-600 dark:text-slate-400">
+            <p className="mt-6 text-center text-sm text-slate-600">
               {t('dont_have_account')} {' '}
               <Link 
                 to="/signup" 
-                className="text-emerald-600 dark:text-emerald-400 font-bold hover:underline"
+                className="text-emerald-600 font-bold hover:underline"
               >
                 {t('signup')}
               </Link>
@@ -136,10 +136,10 @@ export const Login: React.FC = () => {
               required
             />
 
-            {error && <p className="text-red-500 text-sm text-center font-medium bg-red-50 dark:bg-red-900/20 p-2 rounded">{error}</p>}
+            {error && <p className="text-red-500 text-sm text-center font-medium bg-red-50 p-2 rounded">{error}</p>}
             
             {resetSent && (
-              <div className="bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-100 dark:border-emerald-900/50 p-3 rounded-lg flex items-center gap-3 text-emerald-700 dark:text-emerald-300">
+              <div className="bg-emerald-50 border border-emerald-100 p-3 rounded-lg flex items-center gap-3 text-emerald-700">
                 <CheckCircle size={20} className="shrink-0" />
                 <p className="text-sm font-medium">{t('reset_email_sent')}</p>
               </div>

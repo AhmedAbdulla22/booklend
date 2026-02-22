@@ -84,7 +84,7 @@ export const UserManagement = () => {
             <Button variant="secondary" onClick={() => navigate('/admin')} className="!p-2 rounded-full">
                 <ArrowLeft size={20} />
             </Button>
-            <h1 className="text-2xl font-bold text-slate-800 dark:text-white flex items-center gap-2">
+            <h1 className="text-2xl font-bold text-slate-800 flex items-center gap-2">
                 <Users className="text-emerald-500" />
                 {t('recent_activity')}
             </h1>
@@ -94,7 +94,7 @@ export const UserManagement = () => {
           <input 
             type="text" 
             placeholder="Search users..." 
-            className="w-full bg-white/50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 rounded-xl py-2 pl-10 pr-4 focus:outline-none focus:ring-2 focus:ring-emerald-500/20"
+            className="w-full bg-white/50 border border-slate-200 rounded-xl py-2 pl-10 pr-4 focus:outline-none focus:ring-2 focus:ring-emerald-500/20"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
@@ -121,29 +121,29 @@ export const UserManagement = () => {
       <GlassCard className="overflow-hidden p-0">
         <div className="overflow-x-auto">
           <table className="w-full text-left">
-            <thead className="bg-slate-50/50 dark:bg-slate-800/50 border-b border-slate-100 dark:border-slate-800">
+            <thead className="bg-slate-50/50 border-b border-slate-100">
               <tr>
                 <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">User</th>
                 <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Status & Role</th>
                 <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider text-right">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+            <tbody className="divide-y divide-slate-100">
               {loading ? (
                 Array(5).fill(0).map((_, i) => <SkeletonRow key={i} />)
               ) : filteredProfiles.map((p) => {
                 const activity = getUserActivity(p.id);
                 return (
-                  <tr key={p.id} className="hover:bg-slate-50/30 dark:hover:bg-slate-800/20 transition-colors group">
+                  <tr key={p.id} className="hover:bg-slate-50/30 transition-colors group">
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-3">
                         <img 
                           src={p.avatar_url || `${CONSTANTS.DEFAULT_IMAGES.AVATAR_API}${encodeURIComponent(p.full_name)}`} 
-                          className="w-10 h-10 rounded-full border border-slate-200 dark:border-slate-700" 
+                          className="w-10 h-10 rounded-full border border-slate-200" 
                           alt="" 
                         />
                         <div>
-                          <p className="font-bold text-slate-800 dark:text-white">{p.full_name}</p>
+                          <p className="font-bold text-slate-800">{p.full_name}</p>
                           <p className="text-xs text-slate-500">{p.email}</p>
                         </div>
                       </div>
@@ -152,15 +152,15 @@ export const UserManagement = () => {
                       <div className="flex flex-col gap-1.5 items-start">
                         <div className="flex gap-2">
                           {p.role === Role.ADMIN ? (
-                            <Badge color="bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400 text-[10px]">
+                            <Badge color="bg-emerald-100 text-emerald-700 text-[10px]">
                                <Shield size={10} className="inline mr-1" /> {t('role_admin')}
                             </Badge>
                           ) : (
-                            <Badge color="bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400 text-[10px]">
+                            <Badge color="bg-slate-100 text-slate-600 text-[10px]">
                                <User size={10} className="inline mr-1" /> {t('role_member')}
                             </Badge>
                           )}
-                          <Badge color={activity === 'active' ? 'bg-green-100 text-green-700 dark:bg-green-900/30 text-[10px]' : 'bg-slate-100 text-slate-400 dark:bg-slate-800 text-[10px]'}>
+                          <Badge color={activity === 'active' ? 'bg-green-100 text-green-700 text-[10px]' : 'bg-slate-100 text-slate-400 text-[10px]'}>
                             {activity === 'active' ? 'Active' : 'Idle'}
                           </Badge>
                         </div>

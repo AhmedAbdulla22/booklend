@@ -1,8 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Library, Bell, Globe, AlertCircle, LogOut, Moon, Sun, Check, ChevronDown } from 'lucide-react';
+import { Library, Bell, Globe, AlertCircle, LogOut, Check, ChevronDown } from 'lucide-react';
 import { useLanguage } from '../context/LanguageContext';
-import { useTheme } from '../context/ThemeContext';
 import { Button } from './ui/Button';
 import { GlassCard } from './ui/GlassCard';
 import { Loan, Profile, LoanStatus, Language, Role } from '../types';
@@ -21,7 +20,6 @@ export const Navbar = ({
 }) => {
   const navigate = useNavigate();
   const { t, language, setLanguage, dir, localize } = useLanguage();
-  const { theme, toggleTheme } = useTheme();
   const [showNotifs, setShowNotifs] = useState(false);
   
   // Language Menu State
@@ -51,27 +49,22 @@ export const Navbar = ({
   }, []);
 
   return (
-    <nav className="sticky top-4 z-50 mx-4">
-      <GlassCard className="px-6 py-3 flex items-center justify-between">
+    <nav className="sticky top-0 z-50 bg-white border-b border-gray-300">
+      <div className="px-6 py-3 flex items-center justify-between">
         <div 
-          className="flex items-center gap-3 cursor-pointer hover:opacity-80 transition-all active:scale-95 group"
+          className="flex items-center gap-3 cursor-pointer hover:opacity-80 transition-opacity group"
           onClick={() => navigate(user.role === Role.ADMIN ? '/admin' : '/dashboard')}
           title={t('dashboard')}
         >
-          <div className="p-2 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-lg text-white shadow-lg shadow-emerald-500/20 group-hover:shadow-emerald-500/40 transition-shadow">
+          <div className="p-2 bg-blue-600 rounded text-white">
             <Library size={24} />
           </div>
-          <h1 className="text-xl font-bold bg-gradient-to-r from-emerald-600 to-teal-600 dark:from-emerald-400 dark:to-teal-400 bg-clip-text text-transparent hidden sm:block">
+          <h1 className="text-xl font-bold text-gray-800 hidden sm:block">
             {t('app_name')}
           </h1>
         </div>
 
         <div className="flex items-center gap-2 md:gap-3">
-          {/* Theme Toggle */}
-          <Button variant="ghost" onClick={toggleTheme} className="!p-2">
-            {theme === 'light' ? <Moon size={20} /> : <Sun size={20} />}
-          </Button>
-
           {/* Language Dropdown */}
           <div className="relative" ref={langMenuRef}>
             <Button 
@@ -86,7 +79,7 @@ export const Navbar = ({
             
             {isLangMenuOpen && (
               <div 
-                className={`absolute top-full mt-2 w-40 p-1.5 bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl border border-slate-200 dark:border-slate-700 rounded-xl shadow-2xl z-50 flex flex-col gap-1 ${dir === 'rtl' ? 'left-0' : 'right-0'} animate-fade-in`}
+                className={`absolute top-full mt-1 w-40 p-1 bg-white border border-gray-300 rounded shadow-md z-50 flex flex-col gap-1 ${dir === 'rtl' ? 'left-0' : 'right-0'}`}
               >
                 {languages.map((lang) => (
                   <button
@@ -95,10 +88,10 @@ export const Navbar = ({
                       setLanguage(lang.code);
                       setIsLangMenuOpen(false);
                     }}
-                    className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors flex items-center justify-between w-full
+                    className={`px-3 py-2 rounded text-sm font-medium transition-colors flex items-center justify-between w-full
                         ${language === lang.code 
-                          ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400' 
-                          : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
+                          ? 'bg-blue-100 text-blue-700' 
+                          : 'text-gray-600 hover:bg-gray-100'
                         }
                     `}
                   >
@@ -117,16 +110,16 @@ export const Navbar = ({
             <Button variant="ghost" className="!p-2 relative" onClick={() => setShowNotifs(!showNotifs)}>
               <Bell size={20} />
               {overdueCount > 0 && (
-                <span className="absolute top-1 right-1 w-3 h-3 bg-red-500 rounded-full border-2 border-white dark:border-slate-800 animate-pulse"></span>
+                <span className="absolute top-1 right-1 w-3 h-3 bg-red-500 rounded-full border-2 border-white animate-pulse"></span>
               )}
             </Button>
             
             {showNotifs && (
-              <div className={`absolute top-full mt-2 w-72 p-2 bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl border border-slate-200 dark:border-slate-700 rounded-xl shadow-2xl z-50 flex flex-col gap-2 ${dir === 'rtl' ? 'left-0' : 'right-0'}`}>
+              <div className={`absolute top-full mt-1 w-72 p-2 bg-white border border-gray-300 rounded shadow-md z-50 flex flex-col gap-2 ${dir === 'rtl' ? 'left-0' : 'right-0'}`}>
                 <div className="flex justify-between items-center px-2 py-1">
-                   <h4 className="text-sm font-bold text-slate-500 dark:text-slate-400">{t('notifications')}</h4>
+                   <h4 className="text-sm font-bold text-gray-500">{t('notifications')}</h4>
                    {overdueCount > 0 && (
-                     <span className="text-[10px] bg-red-100 dark:bg-red-900/30 text-red-600 px-2 py-0.5 rounded-full font-bold">
+                     <span className="text-[10px] bg-red-100 text-red-600 px-2 py-0.5 rounded font-bold">
                        {overdueCount} {t('overdue')}
                      </span>
                    )}
@@ -138,10 +131,10 @@ export const Navbar = ({
                     const isOverdue = new Date() > new Date(n.due_date);
                     if (!isOverdue) return null;
                     return (
-                      <div key={n.id} className="text-xs p-2 bg-red-50 dark:bg-red-900/20 rounded-lg border border-red-100 dark:border-red-900/50 flex gap-2 items-start">
+                      <div key={n.id} className="text-xs p-2 bg-red-50 rounded border border-red-200 flex gap-2 items-start">
                         <AlertCircle size={14} className="text-red-500 mt-0.5 shrink-0" />
                         <div>
-                          <p className="font-semibold text-slate-700 dark:text-slate-200">{localize(n.book, 'title')}</p>
+                          <p className="font-semibold text-gray-700">{localize(n.book, 'title')}</p>
                           <p className="text-red-500 font-bold">{t('overdue')}</p>
                         </div>
                       </div>
@@ -155,24 +148,24 @@ export const Navbar = ({
           {/* User Profile - Clickable */}
           <div 
             onClick={onProfileClick}
-            className="flex items-center gap-2 ps-2 border-s border-slate-200 dark:border-slate-700 cursor-pointer hover:opacity-80 transition-opacity"
+            className="flex items-center gap-2 ps-2 border-s border-gray-300 cursor-pointer hover:opacity-80 transition-opacity"
           >
             <img 
               src={user.avatar_url || `${CONSTANTS.DEFAULT_IMAGES.AVATAR_API}${encodeURIComponent(user.full_name || 'User')}`}
               alt="Profile" 
-              className="w-8 h-8 rounded-full border border-white dark:border-slate-600 shadow-sm" 
+              className="w-8 h-8 rounded-full border border-gray-300 shadow-sm" 
             />
             <div className="hidden sm:block leading-tight">
-              <p className="text-xs text-slate-500 dark:text-slate-400">{t('welcome')}</p>
-              <p className="text-sm font-semibold text-slate-800 dark:text-slate-200 max-w-[100px] truncate">{user.full_name}</p>
+              <p className="text-xs text-gray-500">{t('welcome')}</p>
+              <p className="text-sm font-semibold text-gray-800 max-w-[100px] truncate">{user.full_name}</p>
             </div>
           </div>
           
-          <Button variant="secondary" onClick={onLogout} className="!p-2 ms-2 text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 border-red-100 dark:border-transparent">
+          <Button variant="secondary" onClick={onLogout} className="ms-2 text-red-600 hover:text-red-700 border-red-300">
             <LogOut size={20} />
           </Button>
         </div>
-      </GlassCard>
+      </div>
     </nav>
   );
 };
