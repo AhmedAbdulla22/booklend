@@ -162,11 +162,11 @@ export const AdminDashboard = () => {
         return (
             <GlassCard className="p-6 flex items-start justify-between relative overflow-hidden">
                 <div className="z-10 relative flex-1">
-                    <div className="h-4 w-24 bg-slate-200 rounded animate-pulse mb-3" />
-                    <div className="h-8 w-16 bg-slate-200 rounded animate-pulse" />
-                    <div className="h-3 w-32 bg-slate-200 rounded animate-pulse mt-4" />
+                    <div className="h-4 w-24 bg-slate-200 dark:bg-slate-700 rounded animate-pulse mb-3" />
+                    <div className="h-8 w-16 bg-slate-200 dark:bg-slate-700 rounded animate-pulse" />
+                    <div className="h-3 w-32 bg-slate-200 dark:bg-slate-700 rounded animate-pulse mt-4" />
                 </div>
-                <div className="h-12 w-12 bg-slate-200 rounded-xl animate-pulse" />
+                <div className="h-12 w-12 bg-slate-200 dark:bg-slate-700 rounded-xl animate-pulse" />
             </GlassCard>
         );
     }
@@ -174,8 +174,8 @@ export const AdminDashboard = () => {
     return (
         <GlassCard className="p-6 flex items-start justify-between relative overflow-hidden group">
           <div className="z-10 relative">
-            <p className="text-slate-500 text-sm font-medium mb-1">{title}</p>
-            <h3 className="text-3xl font-bold text-slate-800">{value}</h3>
+            <p className="text-slate-500 dark:text-slate-400 text-sm font-medium mb-1">{title}</p>
+            <h3 className="text-3xl font-bold text-slate-800 dark:text-white">{value}</h3>
             {subValue && (
                 <p className={`text-xs mt-2 flex items-center gap-1 font-bold ${subValue.includes('+') ? 'text-emerald-500' : 'text-slate-400'}`}>
                     <ArrowUpRight size={12} /> {subValue}
@@ -185,7 +185,7 @@ export const AdminDashboard = () => {
           <div className={`p-3 rounded-xl ${color} text-white shadow-lg transform group-hover:scale-110 transition-transform duration-300 relative z-10`}>
             <Icon size={24} />
           </div>
-          <div className={`absolute -bottom-4 -right-4 w-24 h-24 rounded-full ${color} opacity-10`} />
+          <div className={`absolute -bottom-4 -right-4 w-24 h-24 rounded-full ${color} opacity-10 dark:opacity-20`} />
         </GlassCard>
     );
   };
@@ -193,23 +193,23 @@ export const AdminDashboard = () => {
   return (
     <div className="space-y-6 animate-fade-in pb-20">
       {/* Navigation Tabs */}
-      <GlassCard className="p-1.5 flex flex-wrap gap-1 w-fit mx-auto md:mx-0 bg-white/30 backdrop-blur-md sticky top-24 z-40 border border-white/40">
-        <button className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${tab === 'dashboard' ? 'bg-white shadow-sm text-emerald-600' : 'text-slate-600 hover:bg-white/50'}`} onClick={() => setTab('dashboard')}>
+      <GlassCard className="p-1.5 flex flex-wrap gap-1 w-fit mx-auto md:mx-0 bg-white/30 dark:bg-slate-800/30 backdrop-blur-md sticky top-24 z-40 border border-white/40 dark:border-slate-700">
+        <button className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${tab === 'dashboard' ? 'bg-white dark:bg-slate-700 shadow-sm text-emerald-600 dark:text-emerald-400' : 'text-slate-600 dark:text-slate-400 hover:bg-white/50 dark:hover:bg-slate-700/50'}`} onClick={() => setTab('dashboard')}>
           <div className="flex items-center gap-2"><LayoutDashboard size={16} /> {t('dashboard')}</div>
         </button>
-        <button className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${tab === 'loans' ? 'bg-white shadow-sm text-emerald-600' : 'text-slate-600 hover:bg-white/50'}`} onClick={() => setTab('loans')}>
+        <button className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${tab === 'loans' ? 'bg-white dark:bg-slate-700 shadow-sm text-emerald-600 dark:text-emerald-400' : 'text-slate-600 dark:text-slate-400 hover:bg-white/50 dark:hover:bg-slate-700/50'}`} onClick={() => setTab('loans')}>
           <div className="flex items-center gap-2">
             <Clock size={16} /> {t('requests')}
             {stats.pendingLoans > 0 && <span className="bg-red-500 text-white text-[10px] px-1.5 rounded-full">{stats.pendingLoans}</span>}
           </div>
         </button>
-        <button className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${tab === 'books' ? 'bg-white shadow-sm text-emerald-600' : 'text-slate-600 hover:bg-white/50'}`} onClick={() => setTab('books')}>
+        <button className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${tab === 'books' ? 'bg-white dark:bg-slate-700 shadow-sm text-emerald-600 dark:text-emerald-400' : 'text-slate-600 dark:text-slate-400 hover:bg-white/50 dark:hover:bg-slate-700/50'}`} onClick={() => setTab('books')}>
           <div className="flex items-center gap-2"><BookOpen size={16} /> {t('manage_books')}</div>
         </button>
-        <button className="px-4 py-2 rounded-lg text-sm font-medium transition-all text-slate-600 hover:bg-white/50" onClick={() => navigate('/admin/users')}>
+        <button className={`px-4 py-2 rounded-lg text-sm font-medium transition-all text-slate-600 dark:text-slate-400 hover:bg-white/50 dark:hover:bg-slate-700/50`} onClick={() => navigate('/admin/users')}>
           <div className="flex items-center gap-2"><Users size={16} /> Users</div>
         </button>
-        <button className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${tab === 'logs' ? 'bg-white shadow-sm text-emerald-600' : 'text-slate-600 hover:bg-white/50'}`} onClick={() => setTab('logs')}>
+        <button className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${tab === 'logs' ? 'bg-white dark:bg-slate-700 shadow-sm text-emerald-600 dark:text-emerald-400' : 'text-slate-600 dark:text-slate-400 hover:bg-white/50 dark:hover:bg-slate-700/50'}`} onClick={() => setTab('logs')}>
           <div className="flex items-center gap-2"><Activity size={16} /> {t('activity_logs')}</div>
         </button>
       </GlassCard>
@@ -251,17 +251,17 @@ export const AdminDashboard = () => {
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <div className="lg:col-span-2 space-y-4">
-              <h3 className="font-bold text-slate-700 flex items-center gap-2">
+              <h3 className="font-bold text-slate-700 dark:text-slate-200 flex items-center gap-2">
                 <AlertTriangle size={20} className="text-amber-500" /> {t('attention_needed')}
               </h3>
               {isLoading ? (
                   <div className="space-y-3">
                       {[1, 2, 3].map(i => (
-                          <div key={i} className="h-20 w-full bg-slate-200 rounded-2xl animate-pulse" />
+                          <div key={i} className="h-20 w-full bg-slate-200 dark:bg-slate-800 rounded-2xl animate-pulse" />
                       ))}
                   </div>
               ) : stats.pendingLoans === 0 && stats.overdueLoans === 0 ? (
-                 <GlassCard className="p-8 text-center text-slate-400">
+                 <GlassCard className="p-8 text-center text-slate-400 dark:text-slate-500">
                     <CheckCircle size={32} className="mx-auto text-emerald-500 opacity-50 mb-2" />
                     <p>All caught up!</p>
                  </GlassCard>
@@ -270,10 +270,10 @@ export const AdminDashboard = () => {
                   {loans.filter(l => l.status === LoanStatus.PENDING).slice(0, 3).map(loan => (
                     <GlassCard key={loan.id} className="p-4 flex items-center justify-between group">
                       <div className="flex items-center gap-3">
-                         <div className="p-2 bg-amber-100 text-amber-600 rounded-lg"><Clock size={18} /></div>
+                         <div className="p-2 bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 rounded-lg"><Clock size={18} /></div>
                          <div>
-                            <p className="font-bold text-slate-700">{localize(loan.book, 'title')}</p>
-                            <p className="text-xs text-slate-500">Req: {loan.user?.full_name}</p>
+                            <p className="font-bold text-slate-700 dark:text-slate-200">{localize(loan.book, 'title')}</p>
+                            <p className="text-xs text-slate-500 dark:text-slate-400">Req: {loan.user?.full_name}</p>
                          </div>
                       </div>
                       <Button variant="secondary" className="!text-xs !py-1" onClick={() => setTab('loans')}>Review</Button>
@@ -284,18 +284,18 @@ export const AdminDashboard = () => {
             </div>
             
             <div className="space-y-4">
-               <h3 className="font-bold text-slate-700 flex items-center gap-2">
+               <h3 className="font-bold text-slate-700 dark:text-slate-200 flex items-center gap-2">
                 <List size={20} className="text-emerald-500" /> {t('low_stock')}
                </h3>
                <GlassCard className="p-0 overflow-hidden">
                  {isLoading ? (
                      <div className="p-4 space-y-3">
-                         {[1, 2, 3, 4].map(i => <div key={i} className="h-10 w-full bg-slate-200 rounded animate-pulse" />)}
+                         {[1, 2, 3, 4].map(i => <div key={i} className="h-10 w-full bg-slate-200 dark:bg-slate-800 rounded animate-pulse" />)}
                      </div>
                  ) : stats.lowStock.length === 0 ? (
                     <div className="p-4 text-center text-slate-400 text-xs">Healthy Stock</div>
                  ) : (
-                   <div className="divide-y divide-slate-100">
+                   <div className="divide-y divide-slate-100 dark:divide-slate-800">
                      {stats.lowStock.map(b => (
                        <div key={b.id} className="p-3 flex justify-between items-center">
                           <span className="text-sm font-medium truncate w-40">{localize(b, 'title')}</span>
@@ -324,7 +324,7 @@ export const AdminDashboard = () => {
           </GlassCard>
           {isLoading ? (
              <div className="space-y-3">
-                 {[1, 2, 3, 4].map(i => <div key={i} className="h-20 w-full bg-slate-200 rounded-2xl animate-pulse" />)}
+                 {[1, 2, 3, 4].map(i => <div key={i} className="h-20 w-full bg-slate-200 dark:bg-slate-800 rounded-2xl animate-pulse" />)}
              </div>
           ) : (
             <LoansList loans={filteredLoans} isAdmin={true} onAction={handleLoanAction} />
@@ -340,14 +340,14 @@ export const AdminDashboard = () => {
                <input 
                  type="text" 
                  placeholder={t('search_placeholder')} 
-                 className={`w-full bg-slate-50/50 border border-slate-200 rounded-xl py-2 focus:outline-none ${language === 'ar' || language === 'ku' ? 'pr-10 pl-4' : 'pl-10 pr-4'}`} 
+                 className={`w-full bg-slate-50/50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 rounded-xl py-2 focus:outline-none ${language === 'ar' || language === 'ku' ? 'pr-10 pl-4' : 'pl-10 pr-4'}`} 
                  value={filter} 
                  onChange={e => setFilter(e.target.value)} 
                />
             </div>
             <div className="flex gap-2 w-full md:w-auto">
               <select 
-                 className="px-4 py-2 bg-white/50 border border-slate-200 rounded-xl focus:outline-none text-slate-700"
+                 className="px-4 py-2 bg-white/50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 rounded-xl focus:outline-none text-slate-700 dark:text-slate-200"
                  value={genre}
                  onChange={(e) => setGenre(e.target.value)}
               >
@@ -361,13 +361,13 @@ export const AdminDashboard = () => {
           </GlassCard>
           <div className="grid grid-cols-1 gap-4">
              {isLoading ? (
-                 [1, 2, 3, 4, 5].map(i => <div key={i} className="h-24 w-full bg-slate-200 rounded-2xl animate-pulse" />)
+                 [1, 2, 3, 4, 5].map(i => <div key={i} className="h-24 w-full bg-slate-200 dark:bg-slate-800 rounded-2xl animate-pulse" />)
              ) : (
                 filteredBooks.map(book => (
                   <GlassCard key={book.id} className="p-4 flex flex-col md:flex-row items-center justify-between gap-4">
                     <div className="flex items-center gap-4 w-full md:w-auto">
                       <img src={book.image_url || CONSTANTS.DEFAULT_IMAGES.BOOK} alt="" className="w-16 h-24 object-cover rounded shadow-sm" />
-                      <div><h4 className="font-bold text-slate-800">{localize(book, 'title')}</h4><p className="text-sm text-slate-500">{localize(book, 'author')}</p></div>
+                      <div><h4 className="font-bold text-slate-800 dark:text-white">{localize(book, 'title')}</h4><p className="text-sm text-slate-500">{localize(book, 'author')}</p></div>
                     </div>
                     <div className="flex gap-2">
                        <Button variant="secondary" onClick={() => openEditModal(book)}><Edit2 size={16} /> Edit</Button>
@@ -381,16 +381,16 @@ export const AdminDashboard = () => {
 
       {tab === 'logs' && (
         <div className="animate-slide-up">
-           <GlassCard className="p-0 overflow-hidden divide-y divide-slate-100">
+           <GlassCard className="p-0 overflow-hidden divide-y divide-slate-100 dark:divide-slate-800">
              {isLoading ? (
-                 [1, 2, 3, 4, 5, 6].map(i => <div key={i} className="h-16 w-full bg-slate-200 animate-pulse" />)
+                 [1, 2, 3, 4, 5, 6].map(i => <div key={i} className="h-16 w-full bg-slate-200 dark:bg-slate-800 animate-pulse" />)
              ) : (
                  logs.map(log => (
-                   <div key={log.id} className="p-4 flex justify-between hover:bg-slate-50/50">
+                   <div key={log.id} className="p-4 flex justify-between hover:bg-slate-50/50 dark:hover:bg-slate-800/50">
                       <div className="flex gap-3">
                         <Activity size={16} className="mt-1 text-slate-400" />
                         <div>
-                            <p className="text-sm font-bold text-slate-800">{t(log.action as any)}</p>
+                            <p className="text-sm font-bold text-slate-800 dark:text-white">{t(log.action as any)}</p>
                             <p className="text-xs text-slate-500">{log.details}</p>
                         </div>
                       </div>

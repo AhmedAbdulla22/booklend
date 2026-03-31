@@ -35,7 +35,7 @@ export const Layout = () => {
   if (!user) return null;
 
   return (
-    <div className={`min-h-screen pb-20 bg-gray-50 transition-colors ${language === 'ar' ? 'font-arabic' : 'font-sans'}`}>
+    <div className={`min-h-screen pb-20 transition-all duration-300 ${language === 'ar' ? 'font-arabic' : 'font-sans'}`}>
       <Navbar 
         user={user} 
         notifications={myLoans} 

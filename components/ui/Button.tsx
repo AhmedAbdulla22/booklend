@@ -12,20 +12,20 @@ export const Button: React.FC<ButtonProps> = ({
   className = '', 
   ...props 
 }) => {
-  const baseStyles = "px-4 py-2 rounded font-medium transition-colors flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed";
+  const baseStyles = "px-4 py-2 rounded-xl font-medium transition-all duration-200 flex items-center justify-center gap-2 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed";
   
   const variants = {
-    // Primary: Traditional blue
-    primary: "bg-blue-600 text-white hover:bg-blue-700 border border-blue-700",
+    // Primary: Emerald Green
+    primary: "bg-emerald-600 text-white hover:bg-emerald-700 shadow-lg shadow-emerald-500/30 border border-transparent",
     
-    // Secondary: Traditional gray
-    secondary: "bg-gray-100 text-gray-700 hover:bg-gray-200 border border-gray-300",
+    // Secondary: Light Gray Glass (Light) / Dark Gray Glass (Dark)
+    secondary: "bg-white/50 dark:bg-slate-800/50 text-slate-700 dark:text-slate-200 hover:bg-white/80 dark:hover:bg-slate-700/80 border border-slate-200 dark:border-slate-700 shadow-sm backdrop-blur-md",
     
-    // Danger: Traditional red
-    danger: "bg-red-600 text-white hover:bg-red-700 border border-red-700",
+    // Danger: Red
+    danger: "bg-red-500 text-white hover:bg-red-600 shadow-lg shadow-red-500/30 border border-transparent",
     
-    // Ghost: Simple link style
-    ghost: "text-blue-600 hover:text-blue-800 hover:underline"
+    // Ghost: Transparent hover effect
+    ghost: "text-slate-600 dark:text-slate-300 hover:bg-slate-100/50 dark:hover:bg-slate-800/50"
   };
 
   return (

@@ -70,7 +70,7 @@ export const BookCatalog = ({ user, onRent, onView }: { user: Profile, onRent: (
           <input 
             type="text" 
             placeholder={t('search_placeholder')}
-            className={`w-full bg-slate-50/50 border border-slate-200 rounded-xl py-2 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 transition-all ${language === 'ar' || language === 'ku' ? 'pr-10 pl-4' : 'pl-10 pr-4'} placeholder:text-slate-400`}
+            className={`w-full bg-slate-50/50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl py-2 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 transition-all ${language === 'ar' || language === 'ku' ? 'pr-10 pl-4' : 'pl-10 pr-4'} dark:text-white placeholder:text-slate-400`}
             value={filter}
             onChange={(e) => setFilter(e.target.value)}
           />
@@ -118,7 +118,7 @@ export const BookCatalog = ({ user, onRent, onView }: { user: Profile, onRent: (
                   className="h-full"
                 >
                   <GlassCard className="group overflow-hidden flex flex-col h-full p-0">
-                    <div className="aspect-[2/3] w-full overflow-hidden relative cursor-pointer bg-slate-100" onClick={() => onView(book)}>
+                    <div className="aspect-[2/3] w-full overflow-hidden relative cursor-pointer bg-slate-100 dark:bg-slate-800" onClick={() => onView(book)}>
                        <img 
                          src={book.image_url || CONSTANTS.DEFAULT_IMAGES.BOOK} 
                          alt={book.title} 
@@ -138,19 +138,19 @@ export const BookCatalog = ({ user, onRent, onView }: { user: Profile, onRent: (
 
                     <div className="p-3 md:p-4 flex flex-col flex-1">
                       <div className="mb-3 cursor-pointer" onClick={() => onView(book)}>
-                        <h3 className="font-bold text-slate-800 text-sm md:text-base line-clamp-2 leading-tight mb-1 hover:text-emerald-600 transition-colors h-10 md:h-12">
+                        <h3 className="font-bold text-slate-800 dark:text-slate-100 text-sm md:text-base line-clamp-2 leading-tight mb-1 hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors h-10 md:h-12">
                             {localize(book, 'title')}
                         </h3>
-                        <p className="text-xs text-slate-500 line-clamp-1">{localize(book, 'author')}</p>
+                        <p className="text-xs text-slate-500 dark:text-slate-400 line-clamp-1">{localize(book, 'author')}</p>
                       </div>
                       
-                      <div className="mt-auto pt-3 border-t border-slate-100 flex flex-col gap-3">
+                      <div className="mt-auto pt-3 border-t border-slate-100 dark:border-slate-800 flex flex-col gap-3">
                         <div className="flex items-center justify-between text-xs md:text-sm">
-                          <span className={`flex items-center gap-1.5 font-medium ${book.available_copies > 0 ? 'text-green-600' : 'text-red-500'}`}>
+                          <span className={`flex items-center gap-1.5 font-medium ${book.available_copies > 0 ? 'text-green-600 dark:text-green-400' : 'text-red-500'}`}>
                             <span className={`w-2 h-2 rounded-full ${book.available_copies > 0 ? 'bg-green-500' : 'bg-red-500'}`} />
                             {book.available_copies > 0 ? t('available') : t('out_of_stock')}
                           </span>
-                          <span className="font-bold text-emerald-600">{t('currency')}{book.daily_rate}</span>
+                          <span className="font-bold text-emerald-600 dark:text-emerald-400">{t('currency')}{book.daily_rate}</span>
                         </div>
 
                         <div className="flex gap-2">

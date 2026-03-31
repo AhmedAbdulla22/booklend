@@ -97,8 +97,8 @@ export const BookFormModal: React.FC<BookFormModalProps> = ({ book, onClose, onS
       onClick={() => setActiveTab(id)}
       className={`flex-1 py-2 text-sm font-medium border-b-2 transition-colors ${
         activeTab === id 
-          ? 'border-emerald-500 text-emerald-600 bg-emerald-50/50' 
-          : 'border-transparent text-slate-500 hover:text-slate-700 hover:bg-slate-50'
+          ? 'border-emerald-500 text-emerald-600 dark:text-emerald-400 bg-emerald-50/50 dark:bg-emerald-900/10' 
+          : 'border-transparent text-slate-500 hover:text-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800'
       }`}
     >
       {label}
@@ -107,15 +107,15 @@ export const BookFormModal: React.FC<BookFormModalProps> = ({ book, onClose, onS
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 backdrop-blur-sm p-4 animate-fade-in" onClick={onClose}>
-      <GlassCard className="w-full max-w-2xl bg-white/95 p-0 overflow-hidden flex flex-col max-h-[90vh]" onClick={(e) => e.stopPropagation()}>
+      <GlassCard className="w-full max-w-2xl bg-white/95 dark:bg-slate-900/95 p-0 overflow-hidden flex flex-col max-h-[90vh]" onClick={(e) => e.stopPropagation()}>
         
         {/* Header */}
-        <div className="p-4 border-b border-slate-100 flex justify-between items-center bg-white/50 shrink-0">
-          <h2 className="text-xl font-bold text-slate-800 flex items-center gap-2">
+        <div className="p-4 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center bg-white/50 dark:bg-slate-800/50 shrink-0">
+          <h2 className="text-xl font-bold text-slate-800 dark:text-white flex items-center gap-2">
             {book ? <Edit2Icon /> : <PlusIcon />}
             {book ? t('edit_book') : t('add_book')}
           </h2>
-          <button onClick={onClose} className="p-2 hover:bg-slate-100 rounded-full text-slate-500 transition-colors">
+          <button onClick={onClose} className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full text-slate-500 dark:text-slate-400 transition-colors">
             <X size={20} />
           </button>
         </div>
@@ -151,11 +151,11 @@ export const BookFormModal: React.FC<BookFormModalProps> = ({ book, onClose, onS
                 required
               />
                <div className="flex flex-col gap-1 text-start">
-                <label className="text-sm font-medium text-slate-600 ms-1">{t('filter_genre')}</label>
+                <label className="text-sm font-medium text-slate-600 dark:text-slate-300 ms-1">{t('filter_genre')}</label>
                 {isCustomGenre ? (
                   <div className="flex gap-2">
                     <input 
-                      className="px-4 py-2 bg-white/80 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500/50 text-slate-800 flex-1 min-w-0"
+                      className="px-4 py-2 bg-white/80 dark:bg-slate-950/50 border border-slate-200 dark:border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500/50 text-slate-800 dark:text-white flex-1 min-w-0"
                       value={formData.genre}
                       onChange={e => setFormData({...formData, genre: e.target.value})}
                       placeholder="Type genre name..."
@@ -168,7 +168,7 @@ export const BookFormModal: React.FC<BookFormModalProps> = ({ book, onClose, onS
                   </div>
                 ) : (
                   <select 
-                    className="px-4 py-2 bg-white/80 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500/50 text-slate-800 w-full"
+                    className="px-4 py-2 bg-white/80 dark:bg-slate-950/50 border border-slate-200 dark:border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500/50 text-slate-800 dark:text-white w-full"
                     value={formData.genre}
                     onChange={e => {
                       if (e.target.value === 'CUSTOM_GENRE_OPTION') {
@@ -180,7 +180,7 @@ export const BookFormModal: React.FC<BookFormModalProps> = ({ book, onClose, onS
                     }}
                   >
                     {genreOptions.map(g => <option key={g} value={g}>{g}</option>)}
-                    <option value="CUSTOM_GENRE_OPTION" className="font-bold text-emerald-600 bg-emerald-50">
+                    <option value="CUSTOM_GENRE_OPTION" className="font-bold text-emerald-600 bg-emerald-50 dark:bg-emerald-900/20">
                        + Custom Genre
                     </option>
                   </select>
@@ -189,14 +189,14 @@ export const BookFormModal: React.FC<BookFormModalProps> = ({ book, onClose, onS
             </div>
 
             {/* Language Tabs */}
-            <div className="border border-slate-200 rounded-xl overflow-hidden">
-              <div className="flex bg-slate-50 border-b border-slate-200">
+            <div className="border border-slate-200 dark:border-slate-700 rounded-xl overflow-hidden">
+              <div className="flex bg-slate-50 dark:bg-slate-800/50 border-b border-slate-200 dark:border-slate-700">
                 <TabButton id="en" label="English (Default)" />
                 <TabButton id="ar" label="العربية" />
                 <TabButton id="ku" label="کوردی" />
               </div>
 
-              <div className="p-4 bg-white/40">
+              <div className="p-4 bg-white/40 dark:bg-slate-900/40">
                 
                 {/* ENGLISH TAB */}
                 {activeTab === 'en' && (
@@ -216,9 +216,9 @@ export const BookFormModal: React.FC<BookFormModalProps> = ({ book, onClose, onS
                       placeholder="e.g. F. Scott Fitzgerald"
                     />
                     <div className="flex flex-col gap-1 text-start">
-                      <label className="text-sm font-medium text-slate-600 ms-1">Description (English)</label>
+                      <label className="text-sm font-medium text-slate-600 dark:text-slate-300 ms-1">Description (English)</label>
                       <textarea 
-                        className="px-4 py-2 bg-white/80 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500/50 min-h-[100px] text-slate-800"
+                        className="px-4 py-2 bg-white/80 dark:bg-slate-950/50 border border-slate-200 dark:border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500/50 min-h-[100px] text-slate-800 dark:text-white"
                         value={formData.description || ''}
                         onChange={e => setFormData({...formData, description: e.target.value})}
                         placeholder="Book summary in English..."
@@ -252,9 +252,9 @@ export const BookFormModal: React.FC<BookFormModalProps> = ({ book, onClose, onS
                       className="text-right"
                     />
                     <div className="flex flex-col gap-1 text-start">
-                      <label className="text-sm font-medium text-slate-600 ms-1">الوصف (بالعربية)</label>
+                      <label className="text-sm font-medium text-slate-600 dark:text-slate-300 ms-1">الوصف (بالعربية)</label>
                       <textarea 
-                        className="px-4 py-2 bg-white/80 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500/50 min-h-[100px] text-slate-800 text-right"
+                        className="px-4 py-2 bg-white/80 dark:bg-slate-950/50 border border-slate-200 dark:border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500/50 min-h-[100px] text-slate-800 dark:text-white text-right"
                         value={formData.description_ar || ''}
                         onChange={e => setFormData({...formData, description_ar: e.target.value})}
                         placeholder="ملخص الكتاب بالعربية..."
@@ -288,9 +288,9 @@ export const BookFormModal: React.FC<BookFormModalProps> = ({ book, onClose, onS
                       className="text-right"
                     />
                     <div className="flex flex-col gap-1 text-start">
-                      <label className="text-sm font-medium text-slate-600 ms-1">وەسف (کوردی)</label>
+                      <label className="text-sm font-medium text-slate-600 dark:text-slate-300 ms-1">وەسف (کوردی)</label>
                       <textarea 
-                        className="px-4 py-2 bg-white/80 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500/50 min-h-[100px] text-slate-800 text-right"
+                        className="px-4 py-2 bg-white/80 dark:bg-slate-950/50 border border-slate-200 dark:border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500/50 min-h-[100px] text-slate-800 dark:text-white text-right"
                         value={formData.description_ku || ''}
                         onChange={e => setFormData({...formData, description_ku: e.target.value})}
                         placeholder="پوختەی کتێب بە کوردی..."
@@ -305,7 +305,7 @@ export const BookFormModal: React.FC<BookFormModalProps> = ({ book, onClose, onS
           </div>
 
           {/* Footer Actions */}
-          <div className="p-4 border-t border-slate-100 bg-white/50 flex justify-end gap-3 shrink-0">
+          <div className="p-4 border-t border-slate-100 dark:border-slate-800 bg-white/50 dark:bg-slate-800/50 flex justify-end gap-3 shrink-0">
             <Button type="button" variant="secondary" onClick={onClose}>{t('cancel')}</Button>
             <Button type="submit">
                <Save size={18} /> {book ? t('save') : t('create')}
