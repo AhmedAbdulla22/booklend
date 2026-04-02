@@ -38,7 +38,7 @@ export const LoansList = ({ loans, isAdmin, onAction }: { loans: Loan[], isAdmin
             <div>
               <h4 className="font-bold text-slate-800">{localize(loan.book, 'title')}</h4>
               <div className="text-sm text-slate-500 flex flex-wrap gap-2 mt-1">
-                {isAdmin && <span className="font-semibold text-indigo-600">User: {loan.user?.full_name} •</span>}
+                {isAdmin && <span className="font-semibold text-indigo-600">{t('loan_user_prefix')} {loan.user?.full_name} •</span>}
                 <span className="flex items-center gap-1"><Calendar size={12} /> {new Date(loan.due_date).toLocaleDateString()}</span>
                 {loan.penalty_fee > 0 && (
                   <span className="text-red-500 font-bold flex items-center gap-1">
@@ -51,7 +51,7 @@ export const LoansList = ({ loans, isAdmin, onAction }: { loans: Loan[], isAdmin
 
           <div className="flex items-center gap-4 w-full md:w-auto justify-between md:justify-end">
              <span className={`px-3 py-1 rounded-full text-xs font-bold border ${getStatusColor(loan.status)}`}>
-               {loan.status === LoanStatus.ACTIVE && new Date() > new Date(loan.due_date) ? t('overdue') : t(loan.status as any)}
+               {loan.status === LoanStatus.ACTIVE && new Date() > new Date(loan.due_date) ? t('overdue') : t(`loan_${loan.status}`)}
              </span>
 
              {isAdmin ? (
