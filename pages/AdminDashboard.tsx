@@ -215,11 +215,11 @@ export const AdminDashboard = () => {
           <div className="flex items-center gap-2"><BookOpen size={16} /> {t('manage_books')}</div>
         </button>
         <button className={`px-4 py-2 rounded-lg text-sm font-medium transition-all text-slate-600 dark:text-slate-400 hover:bg-white/50 dark:hover:bg-slate-700/50`} onClick={() => navigate('/admin/users')}>
-          <div className="flex items-center gap-2"><Users size={16} /> Users</div>
+          <div className="flex items-center gap-2"><Users size={16} /> {t('users_tab')}</div>
         </button>
-        <button className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${tab === 'logs' ? 'bg-white dark:bg-slate-700 shadow-sm text-emerald-600 dark:text-emerald-400' : 'text-slate-600 dark:text-slate-400 hover:bg-white/50 dark:hover:bg-slate-700/50'}`} onClick={() => setTab('logs')}>
+        {/* <button className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${tab === 'logs' ? 'bg-white dark:bg-slate-700 shadow-sm text-emerald-600 dark:text-emerald-400' : 'text-slate-600 dark:text-slate-400 hover:bg-white/50 dark:hover:bg-slate-700/50'}`} onClick={() => setTab('logs')}>
           <div className="flex items-center gap-2"><Activity size={16} /> {t('activity_logs')}</div>
-        </button>
+        </button> */}
       </GlassCard>
 
       {/* DASHBOARD TAB */}
@@ -271,7 +271,7 @@ export const AdminDashboard = () => {
               ) : stats.pendingLoans === 0 && stats.overdueLoans === 0 ? (
                  <GlassCard className="p-8 text-center text-slate-400 dark:text-slate-500">
                     <CheckCircle size={32} className="mx-auto text-emerald-500 opacity-50 mb-2" />
-                    <p>All caught up!</p>
+                    <p>{t('all_caught_up')}</p>
                  </GlassCard>
               ) : (
                 <div className="space-y-3">
@@ -301,7 +301,7 @@ export const AdminDashboard = () => {
                          {[1, 2, 3, 4].map(i => <div key={i} className="h-10 w-full bg-slate-200 dark:bg-slate-800 rounded animate-pulse" />)}
                      </div>
                  ) : stats.lowStock.length === 0 ? (
-                    <div className="p-4 text-center text-slate-400 text-xs">Healthy Stock</div>
+                    <div className="p-4 text-center text-slate-400 text-xs">{t('healthy_stock')}</div>
                  ) : (
                    <div className="divide-y divide-slate-100 dark:divide-slate-800">
                      {stats.lowStock.map(b => (
@@ -387,7 +387,7 @@ export const AdminDashboard = () => {
         </div>
       )}
 
-      {tab === 'logs' && (
+      {/* {tab === 'logs' && (
         <div className="animate-slide-up">
            <GlassCard className="p-0 overflow-hidden divide-y divide-slate-100 dark:divide-slate-800">
              {isLoading ? (
@@ -408,7 +408,7 @@ export const AdminDashboard = () => {
              )}
            </GlassCard>
         </div>
-      )}
+      )} */}
 
       {isModalOpen && (
         <BookFormModal 

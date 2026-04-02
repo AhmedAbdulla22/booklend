@@ -146,12 +146,12 @@ export const AdminPanel = () => {
         >
           <div className="flex items-center gap-2"><BookOpen size={16} /> {t('manage_books')}</div>
         </button>
-        <button 
+        {/* <button 
           className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${tab === 'logs' ? 'bg-white dark:bg-slate-700 shadow-sm text-emerald-600 dark:text-emerald-400' : 'text-slate-600 dark:text-slate-400 hover:bg-white/50 dark:hover:bg-slate-700/50'}`}
           onClick={() => setTab('logs')}
         >
           <div className="flex items-center gap-2"><Activity size={16} /> {t('activity_logs')}</div>
-        </button>
+        </button> */}
       </GlassCard>
 
       {/* DASHBOARD TAB */}
@@ -320,7 +320,7 @@ export const AdminPanel = () => {
       )}
 
       {/* ACTIVITY LOGS TAB */}
-      {tab === 'logs' && (
+      {/* {tab === 'logs' && (
         <div className="animate-slide-up space-y-6">
           <GlassCard className="p-0 overflow-hidden">
              {logs.length === 0 ? (
@@ -359,7 +359,7 @@ export const AdminPanel = () => {
              )}
           </GlassCard>
         </div>
-      )}
+      )} */}
 
       {/* MANAGE BOOKS TAB */}
       {tab === 'books' && (
