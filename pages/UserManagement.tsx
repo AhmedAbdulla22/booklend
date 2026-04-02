@@ -15,7 +15,7 @@ import { CONSTANTS } from '../constants';
 const MotionDiv = motion.div;
 
 export const UserManagement = () => {
-  const { t } = useLanguage();
+  const { t, dir, language } = useLanguage();
   const navigate = useNavigate();
   const [profiles, setProfiles] = useState<Profile[]>([]);
   const [loans, setLoans] = useState<Loan[]>([]);
@@ -110,7 +110,7 @@ export const UserManagement = () => {
             </Button>
             <h1 className="text-2xl font-bold text-slate-800 dark:text-white flex items-center gap-2">
                 <Users className="text-emerald-500" />
-                {t('recent_activity')}
+                {t('user_management')}
             </h1>
         </div>
         <div className="relative w-full max-w-xs">
@@ -143,12 +143,12 @@ export const UserManagement = () => {
 
       <GlassCard className="overflow-hidden p-0">
         <div className="overflow-x-auto">
-          <table className="w-full text-left">
+          <table className={`w-full ${dir === 'rtl' ? 'text-right' : 'text-left'}`}>
             <thead className="bg-slate-50/50 dark:bg-slate-800/50 border-b border-slate-100 dark:border-slate-800">
               <tr>
-                <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">User</th>
-                <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Status & Role</th>
-                <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider text-right">Actions</th>
+                <th className={`px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider ${dir === 'rtl' ? 'text-right' : 'text-left'}`}>{t('table_user')}</th>
+                <th className={`px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider ${dir === 'rtl' ? 'text-right' : 'text-left'}`}>{t('table_status_role')}</th>
+                <th className={`px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider ${dir === 'rtl' ? 'text-left' : 'text-right'}`}>{t('table_actions')}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
@@ -158,7 +158,7 @@ export const UserManagement = () => {
                 const activity = getUserActivity(p.id);
                 return (
                   <tr key={p.id} className="hover:bg-slate-50/30 dark:hover:bg-slate-800/20 transition-colors group">
-                    <td className="px-6 py-4">
+                    <td className={`px-6 py-4 ${dir === 'rtl' ? 'text-right' : 'text-left'}`}>
                       <div className="flex items-center gap-3">
                         <img 
                           src={p.avatar_url || `${CONSTANTS.DEFAULT_IMAGES.AVATAR_API}${encodeURIComponent(p.full_name)}`} 
@@ -171,7 +171,7 @@ export const UserManagement = () => {
                         </div>
                       </div>
                     </td>
-                    <td className="px-6 py-4">
+                    <td className={`px-6 py-4 ${dir === 'rtl' ? 'text-right' : 'text-left'}`}>
                       <div className="flex flex-col gap-1.5 items-start">
                         <div className="flex gap-2">
                           {p.role === Role.ADMIN ? (
@@ -184,14 +184,14 @@ export const UserManagement = () => {
                             </Badge>
                           )}
                           <Badge color={activity === 'active' ? 'bg-green-100 text-green-700 dark:bg-green-900/30 text-[10px]' : 'bg-slate-100 text-slate-400 dark:bg-slate-800 text-[10px]'}>
-                            {activity === 'active' ? 'Active' : 'Idle'}
+                            {activity === 'active' ? t('user_active') : t('user_idle')}
                           </Badge>
                         </div>
                       </div>
                     </td>
-                    <td className="px-6 py-4 text-right">
+                    <td className={`px-6 py-4 ${dir === 'rtl' ? 'text-left' : 'text-right'}`}>
                       {/* 4. UPDATED Action Buttons Layout */}
-                      <div className="flex items-center justify-end gap-2">
+                      <div className={`flex items-center ${dir === 'rtl' ? 'justify-start' : 'justify-end'} gap-2`}>
                         <MotionDiv whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
                           <Button 
                               variant={p.role === Role.ADMIN ? 'secondary' : 'primary'} 

@@ -70,6 +70,20 @@ let mockBooks: Book[] = loadMock('books', INITIAL_BOOKS);
 let mockLoans: Loan[] = loadMock('loans', []);
 let mockLogs: ActivityLog[] = loadMock('logs', []);
 
+// Activity Logging Helper
+const addLog = (action: string, details: string, type: ActivityLog['type'], userName?: string) => {
+  const newLog: ActivityLog = {
+    id: Math.random().toString(36).substr(2, 9),
+    action,
+    details,
+    user_name: userName,
+    timestamp: new Date().toISOString(),
+    type
+  };
+  mockLogs.unshift(newLog);
+  saveMock('logs', mockLogs);
+};
+
 // --- MOCK SUPABASE CLIENT ---
 const mockSupabaseClient = {
     auth: {
@@ -243,13 +257,20 @@ export const db = {
   requestLoan: async (userId: string, bookId: string, days: number): Promise<Loan> => {
     // 1. Fetch book data to get the accurate daily_rate for fee calculation
     let bookDailyRate = 0;
+    let bookTitle = 'Unknown Book';
+    let userName = 'Unknown User';
+    
     if (isMock) {
       const book = mockBooks.find(b => b.id === bookId);
       bookDailyRate = book?.daily_rate || 0;
+      bookTitle = book?.title || 'Unknown Book';
+      const user = mockProfiles.find(p => p.id === userId);
+      userName = user?.full_name || 'Unknown User';
     } else {
-      const { data: book, error: bookError } = await supabase.from('books').select('daily_rate').eq('id', bookId).single();
+      const { data: book, error: bookError } = await supabase.from('books').select('daily_rate, title').eq('id', bookId).single();
       if (bookError) throw new Error('Could not fetch book details for fee calculation');
       bookDailyRate = book.daily_rate;
+      bookTitle = book.title;
     }
 
     // 2. Data Validation & Formatting
@@ -272,6 +293,7 @@ export const db = {
 
     if (isMock) {
       const { data, error } = await mockSupabaseClient.from('loans').insert(payload).select().single();
+      addLog('log_rent_request', bookTitle, 'info', userName);
       return data as Loan;
     }
 
@@ -298,8 +320,34 @@ export const db = {
   updateLoanStatus: async (loanId: string, status: LoanStatus): Promise<Loan> => {
     if (isMock) {
         const idx = mockLoans.findIndex(l => l.id === loanId);
-        if (idx !== -1) mockLoans[idx].status = status;
-        saveMock('loans', mockLoans);
+        if (idx !== -1) {
+            const loan = mockLoans[idx];
+            const book = mockBooks.find(b => b.id === loan.book_id);
+            const user = mockProfiles.find(p => p.id === loan.user_id);
+            
+            // Update book availability based on loan status
+            if (status === LoanStatus.ACTIVE && loan.status === LoanStatus.PENDING) {
+                const bookIdx = mockBooks.findIndex(b => b.id === loan.book_id);
+                if (bookIdx !== -1 && mockBooks[bookIdx].available_copies > 0) {
+                    mockBooks[bookIdx].available_copies--;
+                    saveMock('books', mockBooks);
+                }
+                addLog('log_loan_approved', book?.title || 'Unknown Book', 'success', user?.full_name);
+            } else if (status === LoanStatus.REJECTED) {
+                addLog('log_loan_rejected', book?.title || 'Unknown Book', 'danger', user?.full_name);
+            } else if (status === LoanStatus.RETURNED) {
+                const bookIdx = mockBooks.findIndex(b => b.id === loan.book_id);
+                if (bookIdx !== -1) {
+                    mockBooks[bookIdx].available_copies++;
+                    saveMock('books', mockBooks);
+                }
+                loan.return_date = new Date().toISOString();
+                addLog('log_book_returned', book?.title || 'Unknown Book', 'info', user?.full_name);
+            }
+            
+            mockLoans[idx].status = status;
+            saveMock('loans', mockLoans);
+        }
         return mockLoans[idx];
     }
     const { data, error } = await supabase.from('loans').update({ status }).eq('id', loanId).select().single();
@@ -312,6 +360,7 @@ export const db = {
         const newBook = { ...book, id: Math.random().toString(36).substr(2, 9) } as Book;
         mockBooks.unshift(newBook);
         saveMock('books', mockBooks);
+        addLog('log_book_added', newBook.title, 'success', 'Admin');
         return newBook;
     }
     const { data, error } = await supabase.from('books').insert(book).select().single();
@@ -322,8 +371,11 @@ export const db = {
   updateBook: async (updatedBook: Book): Promise<Book> => {
      if (isMock) {
          const idx = mockBooks.findIndex(b => b.id === updatedBook.id);
-         if (idx !== -1) mockBooks[idx] = updatedBook;
-         saveMock('books', mockBooks);
+         if (idx !== -1) {
+            mockBooks[idx] = updatedBook;
+            saveMock('books', mockBooks);
+            addLog('log_book_updated', updatedBook.title, 'warning', 'Admin');
+         }
          return updatedBook;
      }
     const { data, error } = await supabase.from('books').update(updatedBook).eq('id', updatedBook.id).select().single();
