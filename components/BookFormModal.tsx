@@ -5,7 +5,7 @@ import { Button } from './ui/Button';
 import { GlassCard } from './ui/GlassCard';
 import { Input } from './ui/Input';
 import { Book, GENRES } from '../types';
-import { CONSTANTS } from '../constants';
+import { CONSTANTS, TRANSLATIONS } from '../constants';
 
 interface BookFormModalProps {
   book?: Book | null;
@@ -18,6 +18,14 @@ export const BookFormModal: React.FC<BookFormModalProps> = ({ book, onClose, onS
   const { t, dir } = useLanguage();
   const [activeTab, setActiveTab] = useState<'en' | 'ar' | 'ku'>('en');
   const [isCustomGenre, setIsCustomGenre] = useState(false);
+  
+  // Helper to localize genre strings
+  const getLocalizedGenreLabel = (g: string) => {
+    const key = `genre_${g.toLowerCase()}` as keyof typeof TRANSLATIONS['en'];
+    const translated = t(key);
+    // If the translation key doesn't exist (returns the key itself), use the original string
+    return translated === key ? g : translated;
+  };
   
   const genreOptions = Array.from(new Set([...GENRES, ...availableGenres])).sort();
 
@@ -179,7 +187,7 @@ export const BookFormModal: React.FC<BookFormModalProps> = ({ book, onClose, onS
                       }
                     }}
                   >
-                    {genreOptions.map(g => <option key={g} value={g}>{g}</option>)}
+                    {genreOptions.map(g => <option key={g} value={g}>{getLocalizedGenreLabel(g)}</option>)}
                     <option value="CUSTOM_GENRE_OPTION" className="font-bold text-emerald-600 bg-emerald-50 dark:bg-emerald-900/20">
                        + Custom Genre
                     </option>

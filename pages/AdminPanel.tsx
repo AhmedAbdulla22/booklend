@@ -7,10 +7,18 @@ import { LoansList } from '../components/LoansList';
 import { BookFormModal } from '../components/BookFormModal';
 import { db } from '../services/supabaseClient';
 import { Book, Loan, LoanStatus, GENRES, ActivityLog } from '../types';
-import { CONSTANTS } from '../constants';
+import { CONSTANTS, TRANSLATIONS } from '../constants';
 
 export const AdminPanel = () => {
   const { t, language } = useLanguage();
+  
+  // Helper to localize genre strings
+  const getLocalizedGenreLabel = (g: string) => {
+    const key = `genre_${g.toLowerCase()}` as keyof typeof TRANSLATIONS['en'];
+    const translated = t(key);
+    // If the translation key doesn't exist (returns the key itself), use the original string
+    return translated === key ? g : translated;
+  };
   const [loans, setLoans] = useState<Loan[]>([]);
   const [books, setBooks] = useState<Book[]>([]);
   const [logs, setLogs] = useState<ActivityLog[]>([]);
@@ -374,7 +382,7 @@ export const AdminPanel = () => {
                  onChange={(e) => setGenre(e.target.value)}
               >
                 <option value="All">{t('all_genres')}</option>
-                {GENRES.map(g => <option key={g} value={g}>{g}</option>)}
+                {GENRES.map(g => <option key={g} value={g}>{getLocalizedGenreLabel(g)}</option>)}
               </select>
               <Button onClick={openAddModal} className="whitespace-nowrap">
                 <Plus size={18} /> {t('add_book')}
@@ -400,7 +408,7 @@ export const AdminPanel = () => {
                      <h4 className="font-bold text-slate-800 dark:text-slate-100">{book.title}</h4>
                      <p className="text-sm text-slate-500 dark:text-slate-400">{book.author}</p>
                      <div className="flex gap-2 mt-1">
-                       <span className="text-xs bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded text-slate-600 dark:text-slate-300">{book.genre}</span>
+                       <span className="text-xs bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded text-slate-600 dark:text-slate-300">{getLocalizedGenreLabel(book.genre)}</span>
                        <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400">{t('currency')}{book.daily_rate}</span>
                      </div>
                    </div>

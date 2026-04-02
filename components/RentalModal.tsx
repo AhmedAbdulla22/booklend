@@ -4,11 +4,19 @@ import { Button } from './ui/Button';
 import { GlassCard } from './ui/GlassCard';
 import { Badge } from './ui/Badge';
 import { Book } from '../types';
-import { CONSTANTS } from '../constants';
+import { CONSTANTS, TRANSLATIONS } from '../constants';
 
 export const RentalModal = ({ book, onClose, onConfirm }: { book: Book | null, onClose: () => void, onConfirm: (days: number) => void }) => {
   const { t, localize } = useLanguage();
   const [days, setDays] = useState(7);
+  
+  // Helper to localize genre strings
+  const getLocalizedGenreLabel = (g: string) => {
+    const key = `genre_${g.toLowerCase()}` as keyof typeof TRANSLATIONS['en'];
+    const translated = t(key);
+    // If the translation key doesn't exist (returns the key itself), use the original string
+    return translated === key ? g : translated;
+  };
   
   if (!book) return null;
 
@@ -26,7 +34,7 @@ export const RentalModal = ({ book, onClose, onConfirm }: { book: Book | null, o
           <div className="space-y-2">
             <h3 className="font-bold">{localize(book, 'title')}</h3>
             <p className="text-sm text-slate-500">{localize(book, 'author')}</p>
-            <Badge>{localize(book, 'genre')}</Badge>
+            <Badge>{getLocalizedGenreLabel(book.genre)}</Badge>
           </div>
         </div>
 

@@ -5,10 +5,18 @@ import { Button } from './ui/Button';
 import { GlassCard } from './ui/GlassCard';
 import { Badge } from './ui/Badge';
 import { Book } from '../types';
-import { CONSTANTS } from '../constants';
+import { CONSTANTS, TRANSLATIONS } from '../constants';
 
 export const BookDetailsModal = ({ book, onClose, onRent }: { book: Book | null, onClose: () => void, onRent: (book: Book) => void }) => {
   const { t, localize } = useLanguage();
+  
+  // Helper to localize genre strings
+  const getLocalizedGenreLabel = (g: string) => {
+    const key = `genre_${g.toLowerCase()}` as keyof typeof TRANSLATIONS['en'];
+    const translated = t(key);
+    // If the translation key doesn't exist (returns the key itself), use the original string
+    return translated === key ? g : translated;
+  };
   
   if (!book) return null;
 
@@ -34,7 +42,7 @@ export const BookDetailsModal = ({ book, onClose, onRent }: { book: Book | null,
               <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-50 md:opacity-30"></div>
           </div>
           <div className="absolute top-4 left-4 z-10 hidden md:block">
-             <Badge color="bg-white/90 text-emerald-700 backdrop-blur shadow-sm">{localize(book, 'genre')}</Badge>
+             <Badge color="bg-white/90 text-emerald-700 backdrop-blur shadow-sm">{getLocalizedGenreLabel(book.genre)}</Badge>
           </div>
         </div>
 
@@ -43,7 +51,7 @@ export const BookDetailsModal = ({ book, onClose, onRent }: { book: Book | null,
           <div className="p-6 md:p-8 flex-1">
             <div className="mb-6">
                <div className="md:hidden mb-2">
-                 <Badge color="bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300">{localize(book, 'genre')}</Badge>
+                 <Badge color="bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300">{getLocalizedGenreLabel(book.genre)}</Badge>
                </div>
               <h2 className="text-2xl md:text-3xl font-bold text-slate-800 dark:text-white mb-2 leading-tight">{localize(book, 'title')}</h2>
               <p className="text-lg text-emerald-600 dark:text-emerald-400 font-medium">{localize(book, 'author')}</p>

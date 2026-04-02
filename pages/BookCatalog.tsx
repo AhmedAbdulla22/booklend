@@ -131,7 +131,7 @@ export const BookCatalog = ({ user, onRent, onView }: { user: Profile, onRent: (
                        </div>
                        <div className="absolute top-2 right-2">
                          <Badge color="bg-white/90 text-indigo-700 backdrop-blur shadow-sm text-[10px] md:text-xs px-2">
-                            {localize(book, 'genre')}
+                            {getLocalizedGenreLabel(book.genre)}
                          </Badge>
                        </div>
                     </div>

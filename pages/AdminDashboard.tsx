@@ -10,12 +10,20 @@ import { LoansList } from '../components/LoansList';
 import { BookFormModal } from '../components/BookFormModal';
 import { db } from '../services/supabaseClient';
 import { Book, Loan, LoanStatus, GENRES, ActivityLog, Role } from '../types';
-import { CONSTANTS } from '../constants';
+import { CONSTANTS, TRANSLATIONS } from '../constants';
 
 export const AdminDashboard = () => {
   const { t, language, localize } = useLanguage();
   const { user } = useAuth();
   const navigate = useNavigate();
+  
+  // Helper to localize genre strings
+  const getLocalizedGenreLabel = (g: string) => {
+    const key = `genre_${g.toLowerCase()}` as keyof typeof TRANSLATIONS['en'];
+    const translated = t(key);
+    // If the translation key doesn't exist (returns the key itself), use the original string
+    return translated === key ? g : translated;
+  };
   
   const [loans, setLoans] = useState<Loan[]>([]);
   const [books, setBooks] = useState<Book[]>([]);
@@ -352,7 +360,7 @@ export const AdminDashboard = () => {
                  onChange={(e) => setGenre(e.target.value)}
               >
                 <option value="All">{t('all_genres')}</option>
-                {allGenres.map(g => <option key={g} value={g}>{g}</option>)}
+                {allGenres.map(g => <option key={g} value={g}>{getLocalizedGenreLabel(g)}</option>)}
               </select>
               <Button onClick={openAddModal} className="whitespace-nowrap">
                 <Plus size={18} /> {t('add_book')}
