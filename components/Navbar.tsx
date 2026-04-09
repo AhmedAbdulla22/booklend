@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Library, Bell, Globe, AlertCircle, LogOut, Moon, Sun, Check, ChevronDown } from 'lucide-react';
+import { Library, Bell, Globe, AlertCircle, LogOut, Moon, Sun, Check, ChevronDown, Loader2 } from 'lucide-react'; // Added Loader2
 import { useLanguage } from '../context/LanguageContext';
 import { useTheme } from '../context/ThemeContext';
 import { Button } from './ui/Button';
@@ -24,9 +24,22 @@ export const Navbar = ({
   const { theme, toggleTheme } = useTheme();
   const [showNotifs, setShowNotifs] = useState(false);
   
-  // Language Menu State
-  const [isLangMenuOpen, setIsLangMenuOpen] = useState(false);
+  // 1. Add local loading state
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
+  
   const langMenuRef = useRef<HTMLDivElement>(null);
+
+  // 2. Wrap the logout call to manage local state
+  const handleLogout = async () => {
+    try {
+      setIsLoggingOut(true);
+      await onLogout();
+    } catch (error) {
+      console.error("Logout failed:", error);
+    } finally {
+      setIsLoggingOut(false);
+    }
+  };
 
   const overdueCount = notifications.filter(n => 
     (n.status === LoanStatus.ACTIVE && new Date() > new Date(n.due_date)) || 
@@ -39,7 +52,6 @@ export const Navbar = ({
     { code: 'ku', label: 'کوردی' },
   ];
 
-  // Close menus on click outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (langMenuRef.current && !langMenuRef.current.contains(event.target as Node)) {
@@ -49,6 +61,8 @@ export const Navbar = ({
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
+
+  const [isLangMenuOpen, setIsLangMenuOpen] = useState(false);
 
   return (
     <nav className="sticky top-4 z-50 mx-4">
@@ -168,8 +182,18 @@ export const Navbar = ({
             </div>
           </div>
           
-          <Button variant="secondary" onClick={onLogout} className="!p-2 ms-2 text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 border-red-100 dark:border-transparent">
-            <LogOut size={20} />
+          {/* 3. Disable button and show spinner during logout */}
+          <Button 
+            variant="secondary" 
+            onClick={handleLogout} 
+            disabled={isLoggingOut}
+            className="!p-2 ms-2 text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 border-red-100 dark:border-transparent"
+          >
+            {isLoggingOut ? (
+              <Loader2 size={20} className="animate-spin" />
+            ) : (
+              <LogOut size={20} />
+            )}
           </Button>
         </div>
       </GlassCard>

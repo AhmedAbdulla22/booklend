@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { User, Edit2, Check, X, Shield, History, BookOpen, Lock } from 'lucide-react';
+import { User, Edit2, Check, X, Shield, History, BookOpen, Lock, Loader2 } from 'lucide-react'; // Added Loader2
 import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
 import { GlassCard } from '../components/ui/GlassCard';
@@ -17,6 +17,10 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ loans }) => {
   const { user, updateProfile } = useAuth();
   const { t } = useLanguage();
   const [isEditing, setIsEditing] = useState(false);
+  
+  // 1. Add local loading state
+  const [isSaving, setIsSaving] = useState(false);
+
   const [formData, setFormData] = useState({
     full_name: user?.full_name || '',
     avatar_url: user?.avatar_url || ''
@@ -28,25 +32,30 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ loans }) => {
 
   if (!user) return null;
 
-  // Filter loans for the current user (if passed loans are mixed)
   const myLoans = loans.filter(l => l.user_id === user.id);
   const activeCount = myLoans.filter(l => l.status === LoanStatus.ACTIVE).length;
   const returnedCount = myLoans.filter(l => l.status === LoanStatus.RETURNED).length;
 
+  // 2. Wrap handleSave with loading logic
   const handleSave = async () => {
     if (passwords.new || passwords.confirm) {
       if (passwords.new !== passwords.confirm) {
         alert(t('passwords_mismatch'));
         return;
       }
-      // In a real app, we would send the password here. 
-      // For this mock, we pretend it's updated.
     }
     
-    await updateProfile(formData);
-    setPasswords({ new: '', confirm: '' });
-    setIsEditing(false);
-    alert(t('profile_updated'));
+    try {
+      setIsSaving(true);
+      await updateProfile(formData);
+      setPasswords({ new: '', confirm: '' });
+      setIsEditing(false);
+      alert(t('profile_updated'));
+    } catch (error) {
+      console.error("Update failed:", error);
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const handleCancel = () => {
@@ -60,7 +69,6 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ loans }) => {
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 animate-slide-up">
-      {/* User Info Card */}
       <GlassCard className="p-6 lg:col-span-1 h-fit">
         <div className="flex flex-col items-center text-center">
           <div className="relative mb-4 group">
@@ -82,11 +90,13 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ loans }) => {
                 label={t('full_name')} 
                 value={formData.full_name} 
                 onChange={(e) => setFormData({...formData, full_name: e.target.value})}
+                disabled={isSaving} // Disable input while saving
               />
               <Input 
                 label={t('avatar_url')} 
                 value={formData.avatar_url} 
                 onChange={(e) => setFormData({...formData, avatar_url: e.target.value})}
+                disabled={isSaving}
               />
               
               <div className="border-t border-slate-200 dark:border-slate-700 pt-4 mt-2">
@@ -98,6 +108,7 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ loans }) => {
                     value={passwords.new} 
                     onChange={(e) => setPasswords({...passwords, new: e.target.value})}
                     placeholder="••••••••"
+                    disabled={isSaving}
                   />
                   <Input 
                     label={t('confirm_password')} 
@@ -105,16 +116,22 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ loans }) => {
                     value={passwords.confirm} 
                     onChange={(e) => setPasswords({...passwords, confirm: e.target.value})}
                     placeholder="••••••••"
+                    disabled={isSaving}
                   />
                 </div>
               </div>
 
               <div className="flex gap-2 justify-center mt-6">
-                <Button variant="secondary" onClick={handleCancel} className="!p-2">
+                <Button variant="secondary" onClick={handleCancel} className="!p-2" disabled={isSaving}>
                   <X size={20} />
                 </Button>
-                <Button onClick={handleSave} className="!p-2 bg-emerald-500 hover:bg-emerald-600">
-                  <Check size={20} />
+                {/* 3. Show spinner and disable button while saving */}
+                <Button 
+                  onClick={handleSave} 
+                  className="!p-2 bg-emerald-500 hover:bg-emerald-600" 
+                  disabled={isSaving}
+                >
+                  {isSaving ? <Loader2 size={20} className="animate-spin" /> : <Check size={20} />}
                 </Button>
               </div>
             </div>
@@ -147,7 +164,6 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ loans }) => {
         </div>
       </GlassCard>
 
-      {/* History Card */}
       <div className="lg:col-span-2 space-y-6">
         <GlassCard className="p-6">
           <h3 className="text-xl font-bold text-slate-800 dark:text-white mb-6 flex items-center gap-2">
