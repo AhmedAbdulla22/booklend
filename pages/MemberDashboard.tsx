@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useOutletContext } from 'react-router-dom';
 import { Library, Clock, AlertCircle } from 'lucide-react';
@@ -27,13 +26,14 @@ export const MemberDashboard = () => {
   const [selectedBook, setSelectedBook] = useState<Book | null>(null);
   const [viewingBook, setViewingBook] = useState<Book | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  // 1. New state to track if a book is currently being returned
+  const [returningId, setReturningId] = useState<string | null>(null);
 
   const handleRentRequest = async (days: number) => {
     if (!selectedBook || !user) return;
     
     setIsSubmitting(true);
     try {
-      // Using the updated requestLoan function with better validation and logging
       await db.requestLoan(user.id, selectedBook.id, days);
       setSelectedBook(null);
       alert(t('success_rent'));
@@ -47,12 +47,18 @@ export const MemberDashboard = () => {
   };
 
   const handleReturnBook = async (loanId: string) => {
+    // 2. Prevent multiple return requests at once
+    if (returningId) return;
+
     try {
+      setReturningId(loanId);
       await db.updateLoanStatus(loanId, LoanStatus.RETURNED);
       alert(t('success_return'));
       await refreshLoans();
     } catch (e: any) {
       alert(`Error returning book: ${e.message}`);
+    } finally {
+      setReturningId(null);
     }
   };
 
@@ -92,7 +98,8 @@ export const MemberDashboard = () => {
         <LoansList 
           loans={myLoans} 
           isAdmin={false} 
-          onAction={(id, action) => action === 'return' && handleReturnBook(id)} 
+          // 3. Ensure action is blocked if already returning
+          onAction={(id, action) => action === 'return' && !returningId && handleReturnBook(id)} 
         />
       )}
 
@@ -101,6 +108,8 @@ export const MemberDashboard = () => {
           book={selectedBook} 
           onClose={() => !isSubmitting && setSelectedBook(null)} 
           onConfirm={handleRentRequest} 
+          // 4. Pass isSubmitting to the modal to disable its internal buttons
+          isSubmitting={isSubmitting} 
         />
       )}
 
