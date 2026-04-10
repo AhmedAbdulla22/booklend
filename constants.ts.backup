@@ -157,11 +157,6 @@ export const TRANSLATIONS = {
     error_duplicate_loan: 'You already have an active request for this book',
     cannot_delete_has_books: 'Cannot delete user. They have active or overdue books that must be returned first.',
     existing_loan_message_arabic: 'You already have an active request for this book',
-    late_return_title: 'Late Return Notice',
-    late_return_urgent: 'URGENT',
-    late_return_message: 'You have missed the return deadline. Please return immediately to avoid additional penalties.',
-    days_overdue: 'Days Overdue',
-    total_penalty_fees: 'Total Penalty Fees',
   },
   ar: {
     app_name: 'إعارة كتب',
@@ -474,11 +469,6 @@ export const TRANSLATIONS = {
     duplicate_loan_warning: 'پێشتر داواکاریەکی چالاکت هەیە بۆ ئەم کتێبە',
     error_duplicate_loan: 'پێشتر داواکاریەکی چالاکت هەیە بۆ ئەم کتێبە',
     cannot_delete_has_books: 'ناتوانرێت بەکارهێنەر بسڕدرێتەوە. کتێبی چالاک یان دواکەوتوی هەیە کە پێویستە سەرەتا بگەڕێندرێتەوە.',
-    late_return_title: 'ئاگاداری: گەڕاندنەوەی دواکەوتوو',
-    late_return_urgent: 'گرنگ: پێویستە کتێبەکە لە کاتی زوودا بگەڕێنرێتەوە',
-    late_return_message: 'ئەم کتێبە دواکەوتوویە. تکایە لە کاتی زوودا بگەڕێنرێتەوە بۆ ڕێگەگرتن لە سزای زیاتر.',
-    days_overdue: 'ڕۆژانی دواکەوتن',
-    total_penalty_fees: 'کۆی سزای دواکەوتن',
   }
 };
 

@@ -10,8 +10,10 @@ import { LoansList } from '../components/LoansList';
 import { RentalModal } from '../components/RentalModal';
 import { BookDetailsModal } from '../components/BookDetailsModal';
 import { ExpirationAlertModal } from '../components/ExpirationAlertModal';
+import { LateReturnModal } from '../components/LateReturnModal';
 import { db } from '../services/supabaseClient';
 import { Book, Loan, LoanStatus } from '../types';
+import { CONSTANTS } from '../constants';
 
 interface DashboardContextType {
   myLoans: Loan[];
@@ -31,7 +33,10 @@ export const MemberDashboard = () => {
   const [returningId, setReturningId] = useState<string | null>(null);
   // State for expiration alert modal
   const [expirationAlert, setExpirationAlert] = useState<{ isOpen: boolean; bookTitle: string }>({ isOpen: false, bookTitle: '' });
-  // Monitor loans for expiration alerts
+  // State for late return modal
+  const [showLateReturnModal, setShowLateReturnModal] = useState(false);
+  const [lateLoans, setLateLoans] = useState<Loan[]>([]);
+  // Monitor loans for expiration and late return alerts
   useEffect(() => {
     const checkExpiringSoon = () => {
       myLoans.forEach(loan => {
@@ -51,9 +56,54 @@ export const MemberDashboard = () => {
         }
       });
     };
+
+    const checkLateReturns = () => {
+      const now = new Date();
+      console.log('Checking late returns for loans:', myLoans.length);
+      console.log('Current date:', now);
+      
+      const overdueLoans = myLoans.filter(loan => {
+        // Check active or overdue loans
+        if (loan.status !== 'active' && loan.status !== 'overdue') {
+          console.log(`Loan ${loan.id} status ${loan.status} - not checking`);
+          return false;
+        }
+        
+        const dueDate = new Date(loan.due_date);
+        console.log(`Loan ${loan.id} - Due: ${dueDate}, Now: ${now}, Is Late: ${now > dueDate}`);
+        // Check if current date is past the due date
+        return now > dueDate;
+      }).map(loan => {
+        // Calculate penalty fee for overdue loans using book's daily rate
+        const dueDate = new Date(loan.due_date);
+        const diffDays = Math.ceil((now.getTime() - dueDate.getTime()) / (1000 * 60 * 60 * 24));
+        const bookDailyRate = loan.book?.daily_rate || 0;
+        const calculatedPenalty = diffDays * bookDailyRate;
+        
+        // Use existing penalty_fee if available, otherwise use calculated penalty
+        const penaltyFee = loan.penalty_fee > 0 ? loan.penalty_fee : calculatedPenalty;
+        
+        console.log(`Loan ${loan.id} - Days overdue: ${diffDays}, Book daily rate: ${bookDailyRate}, Penalty: ${penaltyFee}`);
+        
+        return {
+          ...loan,
+          penalty_fee: penaltyFee
+        };
+      });
+      
+      console.log('Found overdue loans:', overdueLoans.length);
+      setLateLoans(overdueLoans);
+      
+      // Auto-show modal if there are overdue loans and modal isn't already open
+      if (overdueLoans.length > 0 && !showLateReturnModal) {
+        setShowLateReturnModal(true);
+        console.log('Auto-showing late return modal for', overdueLoans.length, 'overdue loans');
+      }
+    };
     
     if (myLoans.length > 0) {
       checkExpiringSoon();
+      checkLateReturns();
     }
   }, [myLoans, language]);
 
@@ -94,6 +144,7 @@ export const MemberDashboard = () => {
 
   return (
     <div className="animate-slide-up">
+            
       <div className="flex gap-4 mb-8 overflow-x-auto pb-2 scrollbar-hide">
         <Button 
           variant={view === 'catalog' ? 'primary' : 'secondary'} 
@@ -152,6 +203,13 @@ export const MemberDashboard = () => {
         isOpen={expirationAlert.isOpen}
         onClose={() => setExpirationAlert({ isOpen: false, bookTitle: '' })}
         bookTitle={expirationAlert.bookTitle}
+        language={language}
+      />
+
+      <LateReturnModal
+        isOpen={showLateReturnModal}
+        onClose={() => setShowLateReturnModal(false)}
+        lateLoans={lateLoans}
         language={language}
       />
     </div>

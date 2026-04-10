@@ -1,5 +1,6 @@
 import { Book, Loan, LoanStatus, Profile, Role, ActivityLog } from '../types';
 import { supabase } from './supabaseClient';
+import { CONSTANTS } from '../constants';
 
 // Activity Logging Helper - now uses real Supabase
 const addLog = async (action: string, details: string, type: ActivityLog['type'], userName?: string) => {
@@ -180,8 +181,9 @@ export const db = {
         
         if (returnDate > dueDate) {
           const diffDays = Math.ceil((returnDate.getTime() - dueDate.getTime()) / (1000 * 60 * 60 * 24));
-          // Note: You may need to add these constants to your database or handle differently
-          penaltyFee = 5 + (diffDays * 2); // Example flat fee + daily penalty
+          // Use the book's daily rate for penalty calculation
+          const bookDailyRate = loanData.book?.daily_rate || 0;
+          penaltyFee = diffDays * bookDailyRate;
         }
 
         // Update return date and penalty
