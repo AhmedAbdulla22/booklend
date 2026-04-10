@@ -151,6 +151,7 @@ export const TRANSLATIONS = {
     genre_psychology: 'Psychology',
     genre_romance: 'Romance',
     genre_sci_fi: 'Sci-Fi',
+    cannot_delete_has_books: 'Cannot delete user. They have active or overdue books that must be returned first.',
   },
   ar: {
     app_name: 'إعارة كتب',
@@ -301,6 +302,7 @@ export const TRANSLATIONS = {
     genre_psychology: 'علم نفس',
     genre_romance: 'رومانسي',
     genre_sci_fi: 'خيال علمي',
+    cannot_delete_has_books: 'لا يمكن مسح المستخدم. يوجد كتاب (أو كتب) في حوزته يجب إرجاعها أولاً.',
   },
   ku: {
     app_name: 'BookLend',
@@ -451,6 +453,7 @@ export const TRANSLATIONS = {
     genre_psychology: 'دەروونناسی',
     genre_romance: 'ڕۆمانسی',
     genre_sci_fi: 'خەیاڵی زانستی',
+    cannot_delete_has_books: 'ناتوانرێت بەکارهێنەر بسڕدرێتەوە. کتێبی چالاک یان دواکەوتوی هەیە کە پێویستە سەرەتا بگەڕێندرێتەوە.',
   }
 };
 

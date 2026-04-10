@@ -30,6 +30,10 @@ export const UserManagement = () => {
     loadData();
   }, []);
 
+  useEffect(() => {
+    console.log('Notification state changed:', notification);
+  }, [notification]);
+
   const loadData = async () => {
     try {
       setLoading(true);
@@ -74,22 +78,61 @@ export const UserManagement = () => {
   };
 
   // 3. ADDED handleDeleteUser function
-  const handleDeleteUser = async (user: Profile) => {
+const handleDeleteUser = async (user: Profile) => {
+    console.log('handleDeleteUser called for user:', user);
+    
+    // 1. منع مسح الآدمن
     if (user.role === Role.ADMIN) {
+      console.log('Cannot delete admin user');
       setNotification({ message: "Cannot delete an Admin user.", type: 'error' });
       setTimeout(() => setNotification(null), 3000);
       return;
     }
 
-    if (!window.confirm(`Are you sure you want to delete ${user.full_name}? This action cannot be undone.`)) return;
+    // 2. إضافة التحقق من وجود إعارات نشطة أو متأخرة للمستخدم
+    const hasActiveLoan = loans.some(l => 
+      l.user_id === user.id && 
+      (l.status === LoanStatus.ACTIVE || l.status === LoanStatus.OVERDUE)
+    );
+    
+    console.log('Has active loan:', hasActiveLoan, 'for user:', user.id);
 
+    if (hasActiveLoan) {
+      console.log('User has active loans, showing error message');
+      const notificationMessage = t('cannot_delete_has_books');
+      console.log('Setting notification with message:', notificationMessage);
+      setNotification({ 
+        message: notificationMessage, 
+        type: 'error' 
+      });
+      setTimeout(() => {
+        console.log('Clearing notification after timeout');
+        setNotification(null);
+      }, 4000);
+      return; 
+    }
+
+    console.log('Showing confirmation dialog');
+    if (!window.confirm(`Are you sure you want to delete ${user.full_name}? This action cannot be undone.`)) {
+      console.log('User cancelled deletion');
+      return;
+    }
+
+    console.log('User confirmed deletion, proceeding...');
     try {
       setDeletingId(user.id);
+      console.log('Calling db.deleteUser for user:', user.id);
       await db.deleteUser(user.id);
+      console.log('User deleted successfully from database');
       setProfiles(prev => prev.filter(p => p.id !== user.id));
+      console.log('Setting success notification');
       setNotification({ message: "User deleted successfully", type: 'success' });
-      setTimeout(() => setNotification(null), 3000);
+      setTimeout(() => {
+        console.log('Clearing success notification after timeout');
+        setNotification(null);
+      }, 3000);
     } catch (error) {
+      console.error('Error deleting user:', error);
       setNotification({ message: "Failed to delete user. Check database constraints.", type: 'error' });
     } finally {
       setDeletingId(null);
@@ -127,17 +170,21 @@ export const UserManagement = () => {
 
       <AnimatePresence>
         {notification && (
-          <MotionDiv 
-            initial={{ opacity: 0, y: -20 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -20 }}
-            className={`p-4 rounded-xl flex items-center gap-3 ${
-              notification.type === 'success' ? 'bg-emerald-50 text-emerald-700 border border-emerald-100' : 'bg-red-50 text-red-700 border border-red-100'
-            }`}
-          >
-              {notification.type === 'success' ? <CheckCircle size={20} /> : <AlertCircle size={20} />}
-              <p className="font-medium text-sm">{notification.message}</p>
-          </MotionDiv>
+          <>
+            {console.log('Rendering notification:', notification)}
+            <MotionDiv 
+              initial={{ opacity: 0, y: -20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              className={`p-4 rounded-xl flex items-center gap-3 fixed top-4 right-4 z-50 shadow-lg ${
+                notification.type === 'success' ? 'bg-emerald-50 text-emerald-700 border border-emerald-100' : 'bg-red-50 text-red-700 border border-red-100'
+              }`}
+              style={{ position: 'fixed', top: '20px', right: '20px', zIndex: 9999 }}
+            >
+                {notification.type === 'success' ? <CheckCircle size={20} /> : <AlertCircle size={20} />}
+                <p className="font-medium text-sm">{notification.message}</p>
+            </MotionDiv>
+          </>
         )}
       </AnimatePresence>
 
@@ -213,7 +260,10 @@ export const UserManagement = () => {
                             <Button 
                               variant="secondary"
                               className={`!p-1.5 h-auto border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700 ${deletingId === p.id ? 'opacity-50 pointer-events-none' : ''}`}
-                              onClick={() => handleDeleteUser(p)}
+                              onClick={() => {
+                                console.log('Delete button clicked for user:', p);
+                                handleDeleteUser(p);
+                              }}
                               disabled={deletingId === p.id || updatingId === p.id}
                               title="Delete User"
                             >
