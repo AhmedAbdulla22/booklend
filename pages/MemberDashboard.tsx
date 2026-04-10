@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useOutletContext } from 'react-router-dom';
 import { Library, Clock, AlertCircle } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
@@ -9,6 +9,7 @@ import { BookCatalog } from './BookCatalog';
 import { LoansList } from '../components/LoansList';
 import { RentalModal } from '../components/RentalModal';
 import { BookDetailsModal } from '../components/BookDetailsModal';
+import { ExpirationAlertModal } from '../components/ExpirationAlertModal';
 import { db } from '../services/supabaseClient';
 import { Book, Loan, LoanStatus } from '../types';
 
@@ -19,7 +20,7 @@ interface DashboardContextType {
 
 export const MemberDashboard = () => {
   const { user } = useAuth();
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const { myLoans, refreshLoans } = useOutletContext<DashboardContextType>();
   
   const [view, setView] = useState<'catalog' | 'loans'>('catalog');
@@ -28,6 +29,33 @@ export const MemberDashboard = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   // 1. New state to track if a book is currently being returned
   const [returningId, setReturningId] = useState<string | null>(null);
+  // State for expiration alert modal
+  const [expirationAlert, setExpirationAlert] = useState<{ isOpen: boolean; bookTitle: string }>({ isOpen: false, bookTitle: '' });
+  // Monitor loans for expiration alerts
+  useEffect(() => {
+    const checkExpiringSoon = () => {
+      myLoans.forEach(loan => {
+        // Only check active loans
+        if (loan.status !== 'active') return;
+        
+        const dueDate = new Date(loan.due_date);
+        const now = new Date();
+        const difference = dueDate.getTime() - now.getTime();
+        
+        // If the difference is positive and less than or equal to 86400000 milliseconds (1 day)
+        if (difference > 0 && difference <= 86400000) {
+          const bookTitle = loan.book?.title_ar || loan.book?.title || 'Unknown Book';
+          
+          // Show the custom expiration alert modal
+          setExpirationAlert({ isOpen: true, bookTitle });
+        }
+      });
+    };
+    
+    if (myLoans.length > 0) {
+      checkExpiringSoon();
+    }
+  }, [myLoans, language]);
 
   const handleRentRequest = async (days: number) => {
     if (!selectedBook || !user) return;
@@ -118,6 +146,13 @@ export const MemberDashboard = () => {
         onClose={() => setViewingBook(null)} 
         onRent={(book) => setSelectedBook(book)} 
         loans={myLoans}
+      />
+
+      <ExpirationAlertModal
+        isOpen={expirationAlert.isOpen}
+        onClose={() => setExpirationAlert({ isOpen: false, bookTitle: '' })}
+        bookTitle={expirationAlert.bookTitle}
+        language={language}
       />
     </div>
   );

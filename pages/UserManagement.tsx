@@ -30,60 +30,79 @@ export const UserManagement = () => {
     loadData();
   }, []);
 
-  // Refetch data when component regains visibility (fixes navigation and app switching issues)
+  // Refetch data when component regains visibility (conservative approach to prevent excessive refreshes)
   useEffect(() => {
     let lastActiveTime = Date.now();
     let inactivityTimer: NodeJS.Timeout;
+    let isPageVisible = true;
 
     const handleVisibilityChange = () => {
-      if (!document.hidden) {
-        loadData();
+      const wasHidden = document.hidden;
+      isPageVisible = !document.hidden;
+      
+      // Only refresh if page was hidden and now visible (tab switching)
+      if (wasHidden && isPageVisible) {
+        const now = Date.now();
+        if (now - lastActiveTime > 3000) { // 3 second cooldown
+          loadData();
+          lastActiveTime = now;
+        }
       }
     };
 
     // Handle window focus (when switching back from other apps)
     const handleWindowFocus = () => {
+      if (!isPageVisible) return; // Don't refresh if page is not visible
+      
       const now = Date.now();
-      // Only refresh if it's been more than 2 seconds since last active (prevents rapid refires)
-      if (now - lastActiveTime > 2000) {
+      // Only refresh if it's been more than 5 seconds since last active
+      if (now - lastActiveTime > 5000) {
         loadData();
+        lastActiveTime = now;
       }
-      lastActiveTime = now;
     };
 
-    // Handle page reactivation (mouse movement after inactivity)
+    // Handle page reactivation (only after significant inactivity)
     const handleUserInteraction = () => {
+      if (!isPageVisible) return; // Don't refresh if page is not visible
+      
       const now = Date.now();
-      if (now - lastActiveTime > 5000) { // 5 seconds of inactivity
+      // Only refresh after 30+ seconds of inactivity (app switching scenario)
+      if (now - lastActiveTime > 30000) {
         loadData();
+        lastActiveTime = now;
       }
-      lastActiveTime = now;
     };
 
-    // Set up inactivity detection
+    // Set up inactivity detection (longer threshold)
     const resetInactivityTimer = () => {
       clearTimeout(inactivityTimer);
       inactivityTimer = setTimeout(() => {
-        // Mark as inactive
-        lastActiveTime = Date.now() - 10000; // 10 seconds ago
-      }, 5000);
+        // Mark as inactive after 30 seconds
+        lastActiveTime = Date.now() - 35000;
+      }, 30000);
     };
 
     document.addEventListener('visibilitychange', handleVisibilityChange);
     window.addEventListener('focus', handleWindowFocus);
-    document.addEventListener('mousemove', handleUserInteraction);
-    document.addEventListener('keydown', handleUserInteraction);
-    document.addEventListener('click', handleUserInteraction);
+    
+    // Only add user interaction events with throttling
+    let mouseMoveThrottle: NodeJS.Timeout;
+    const handleMouseMove = () => {
+      clearTimeout(mouseMoveThrottle);
+      mouseMoveThrottle = setTimeout(() => handleUserInteraction(), 1000);
+    };
+    
+    document.addEventListener('mousemove', handleMouseMove);
     
     resetInactivityTimer();
 
     return () => {
       document.removeEventListener('visibilitychange', handleVisibilityChange);
       window.removeEventListener('focus', handleWindowFocus);
-      document.removeEventListener('mousemove', handleUserInteraction);
-      document.removeEventListener('keydown', handleUserInteraction);
-      document.removeEventListener('click', handleUserInteraction);
+      document.removeEventListener('mousemove', handleMouseMove);
       clearTimeout(inactivityTimer);
+      clearTimeout(mouseMoveThrottle);
     };
   }, []);
 
