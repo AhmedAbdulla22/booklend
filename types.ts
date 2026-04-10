@@ -22,8 +22,6 @@ export interface Book {
   author_ku?: string;
   
   genre: string; // Default/English
-  genre_ar?: string;
-  genre_ku?: string;
 
   total_copies: number;
   available_copies: number;

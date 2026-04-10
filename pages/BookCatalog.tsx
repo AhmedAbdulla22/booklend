@@ -43,6 +43,34 @@ export const BookCatalog = ({ user, onRent, onView }: { user: Profile, onRent: (
       .finally(() => setLoading(false));
   }, []);
 
+  // Refetch data when component regains visibility (fixes navigation issue)
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (!document.hidden) {
+        setLoading(true);
+        db.getBooks()
+          .then(setBooks)
+          .finally(() => setLoading(false));
+      }
+    };
+
+    // Also refetch when route changes back to this component
+    const handleRouteChange = () => {
+      setLoading(true);
+      db.getBooks()
+        .then(setBooks)
+        .finally(() => setLoading(false));
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    window.addEventListener('focus', handleRouteChange);
+
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('focus', handleRouteChange);
+    };
+  }, []);
+
   const allGenres = Array.from(new Set([...GENRES, ...books.map(b => b.genre)])).sort();
 
   const filteredBooks = books.filter(b => {

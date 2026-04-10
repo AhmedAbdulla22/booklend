@@ -13,6 +13,7 @@ interface BookFormModalProps {
   onSave: (book: Partial<Book>) => void;
   availableGenres?: string[];
   isSaving?: boolean; 
+  readOnly?: boolean;
 }
 
 export const BookFormModal: React.FC<BookFormModalProps> = ({ 
@@ -20,7 +21,8 @@ export const BookFormModal: React.FC<BookFormModalProps> = ({
   onClose, 
   onSave, 
   availableGenres = [],
-  isSaving = false 
+  isSaving = false,
+  readOnly = false
 }) => {
   const { t, dir } = useLanguage();
   const [activeTab, setActiveTab] = useState<'en' | 'ar' | 'ku'>('en');
@@ -37,7 +39,7 @@ export const BookFormModal: React.FC<BookFormModalProps> = ({
   const [formData, setFormData] = useState<Partial<Book>>({
     title: '', title_ar: '', title_ku: '',
     author: '', author_ar: '', author_ku: '',
-    genre: GENRES[0], genre_ar: '', genre_ku: '',
+    genre: GENRES[0],
     total_copies: 1, available_copies: 1, daily_rate: 2,
     image_url: '',
     description: '', description_ar: '', description_ku: ''
@@ -55,7 +57,7 @@ export const BookFormModal: React.FC<BookFormModalProps> = ({
       setFormData({
         title: '', title_ar: '', title_ku: '',
         author: '', author_ar: '', author_ku: '',
-        genre: GENRES[0], genre_ar: '', genre_ku: '',
+        genre: GENRES[0],
         total_copies: 1, available_copies: 1, daily_rate: 2,
         image_url: CONSTANTS.DEFAULT_IMAGES.BOOK,
         description: '', description_ar: '', description_ku: ''
@@ -126,28 +128,28 @@ export const BookFormModal: React.FC<BookFormModalProps> = ({
               <Input 
                 label={t('image_url')} 
                 value={formData.image_url} 
-                onChange={e => setFormData({...formData, image_url: e.target.value})} 
+                onChange={e => !readOnly && setFormData({...formData, image_url: e.target.value})} 
                 placeholder="https://..."
                 className="col-span-1 md:col-span-3"
-                disabled={isSaving}
+                disabled={isSaving || readOnly}
               />
               <Input 
                 label={t('daily_rate')} 
                 type="number" 
                 step="0.5" 
                 value={formData.daily_rate} 
-                onChange={e => setFormData({...formData, daily_rate: Number(e.target.value)})} 
+                onChange={e => !readOnly && setFormData({...formData, daily_rate: Number(e.target.value)})} 
                 required
-                disabled={isSaving}
+                disabled={isSaving || readOnly}
               />
                <Input 
                 label={t('copies')} 
                 type="number" 
                 min="0"
                 value={formData.total_copies} 
-                onChange={e => handleCopyChange(Number(e.target.value))} 
+                onChange={e => !readOnly && handleCopyChange(Number(e.target.value))} 
                 required
-                disabled={isSaving}
+                disabled={isSaving || readOnly}
               />
                <div className="flex flex-col gap-1 text-start">
                 <label className="text-sm font-medium text-slate-600 dark:text-slate-300 ms-1">{t('filter_genre')}</label>
@@ -156,18 +158,23 @@ export const BookFormModal: React.FC<BookFormModalProps> = ({
                     <input 
                       className="px-4 py-2 bg-white/80 dark:bg-slate-950/50 border border-slate-200 dark:border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500/50 text-slate-800 dark:text-white flex-1 min-w-0 disabled:opacity-50"
                       value={formData.genre}
-                      onChange={e => setFormData({...formData, genre: e.target.value})}
+                      onChange={e => !readOnly && setFormData({...formData, genre: e.target.value})}
                       placeholder="Type genre name..."
                       required
                       autoFocus
-                      disabled={isSaving}
+                      disabled={isSaving || readOnly}
                     />
                     <Button 
                       variant="secondary" 
                       type="button" 
-                      onClick={() => { setIsCustomGenre(false); setFormData({...formData, genre: GENRES[0]}) }} 
+                      onClick={() => {
+                        if (!readOnly) {
+                          setIsCustomGenre(false);
+                          setFormData({...formData, genre: GENRES[0]});
+                        }
+                      }} 
                       className="shrink-0 px-3"
-                      disabled={isSaving}
+                      disabled={isSaving || readOnly}
                     >
                        <X size={18} />
                     </Button>
@@ -176,13 +183,15 @@ export const BookFormModal: React.FC<BookFormModalProps> = ({
                   <select 
                     className="px-4 py-2 bg-white/80 dark:bg-slate-950/50 border border-slate-200 dark:border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500/50 text-slate-800 dark:text-white w-full disabled:opacity-50"
                     value={formData.genre}
-                    disabled={isSaving}
+                    disabled={isSaving || readOnly}
                     onChange={e => {
-                      if (e.target.value === 'CUSTOM_GENRE_OPTION') {
-                          setIsCustomGenre(true);
-                          setFormData({...formData, genre: ''});
-                      } else {
-                          setFormData({...formData, genre: e.target.value});
+                      if (!readOnly) {
+                        if (e.target.value === 'CUSTOM_GENRE_OPTION') {
+                            setIsCustomGenre(true);
+                            setFormData({...formData, genre: ''});
+                        } else {
+                            setFormData({...formData, genre: e.target.value});
+                        }
                       }
                     }}
                   >
@@ -208,27 +217,27 @@ export const BookFormModal: React.FC<BookFormModalProps> = ({
                     <Input 
                       label="Title (English)" 
                       value={formData.title} 
-                      onChange={e => setFormData({...formData, title: e.target.value})} 
+                      onChange={e => !readOnly && setFormData({...formData, title: e.target.value})} 
                       required
                       placeholder="e.g. The Great Gatsby"
-                      disabled={isSaving}
+                      disabled={isSaving || readOnly}
                     />
                     <Input 
                       label="Author (English)" 
                       value={formData.author} 
-                      onChange={e => setFormData({...formData, author: e.target.value})} 
+                      onChange={e => !readOnly && setFormData({...formData, author: e.target.value})} 
                       required
                       placeholder="e.g. F. Scott Fitzgerald"
-                      disabled={isSaving}
+                      disabled={isSaving || readOnly}
                     />
                     <div className="flex flex-col gap-1 text-start">
                       <label className="text-sm font-medium text-slate-600 dark:text-slate-300 ms-1">Description (English)</label>
                       <textarea 
                         className="px-4 py-2 bg-white/80 dark:bg-slate-950/50 border border-slate-200 dark:border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500/50 min-h-[100px] text-slate-800 dark:text-white disabled:opacity-50"
                         value={formData.description || ''}
-                        onChange={e => setFormData({...formData, description: e.target.value})}
+                        onChange={e => !readOnly && setFormData({...formData, description: e.target.value})}
                         placeholder="Book summary in English..."
-                        disabled={isSaving}
+                        disabled={isSaving || readOnly}
                       />
                     </div>
                   </div>
@@ -239,35 +248,27 @@ export const BookFormModal: React.FC<BookFormModalProps> = ({
                     <Input 
                       label="العنوان (بالعربية)" 
                       value={formData.title_ar || ''} 
-                      onChange={e => setFormData({...formData, title_ar: e.target.value})} 
+                      onChange={e => !readOnly && setFormData({...formData, title_ar: e.target.value})} 
                       placeholder="مثال: غاتسبي العظيم"
                       className="text-right"
-                      disabled={isSaving} 
+                      disabled={isSaving || readOnly} 
                     />
                     <Input 
                       label="المؤلف (بالعربية)" 
                       value={formData.author_ar || ''} 
-                      onChange={e => setFormData({...formData, author_ar: e.target.value})} 
+                      onChange={e => !readOnly && setFormData({...formData, author_ar: e.target.value})} 
                       placeholder="مثال: فرانسيس سكوت فيتزجيرالد"
                       className="text-right"
-                      disabled={isSaving} 
-                    />
-                    <Input 
-                      label="النوع (بالعربية - اختياري)" 
-                      value={formData.genre_ar || ''} 
-                      onChange={e => setFormData({...formData, genre_ar: e.target.value})} 
-                      placeholder="مثال: خيال"
-                      className="text-right"
-                      disabled={isSaving} 
+                      disabled={isSaving || readOnly} 
                     />
                     <div className="flex flex-col gap-1 text-start">
                       <label className="text-sm font-medium text-slate-600 dark:text-slate-300 ms-1">الوصف (بالعربية)</label>
                       <textarea 
                         className="px-4 py-2 bg-white/80 dark:bg-slate-950/50 border border-slate-200 dark:border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500/50 min-h-[100px] text-slate-800 dark:text-white text-right disabled:opacity-50"
                         value={formData.description_ar || ''}
-                        onChange={e => setFormData({...formData, description_ar: e.target.value})}
+                        onChange={e => !readOnly && setFormData({...formData, description_ar: e.target.value})}
                         placeholder="ملخص الكتاب بالعربية..."
-                        disabled={isSaving} 
+                        disabled={isSaving || readOnly} 
                       />
                     </div>
                   </div>
@@ -278,35 +279,27 @@ export const BookFormModal: React.FC<BookFormModalProps> = ({
                     <Input 
                       label="ناونیشان (کوردی)" 
                       value={formData.title_ku || ''} 
-                      onChange={e => setFormData({...formData, title_ku: e.target.value})} 
+                      onChange={e => !readOnly && setFormData({...formData, title_ku: e.target.value})} 
                       placeholder="نموونە: گاتسبی مەزن"
                       className="text-right"
-                      disabled={isSaving} 
+                      disabled={isSaving || readOnly} 
                     />
                     <Input 
                       label="نووسەر (کوردی)" 
                       value={formData.author_ku || ''} 
-                      onChange={e => setFormData({...formData, author_ku: e.target.value})} 
+                      onChange={e => !readOnly && setFormData({...formData, author_ku: e.target.value})} 
                       placeholder="نموونە: سکۆت فیتزجێراڵد"
                       className="text-right"
-                      disabled={isSaving} 
-                    />
-                    <Input 
-                      label="چەشن (کوردی - ئیختیاری)" 
-                      value={formData.genre_ku || ''} 
-                      onChange={e => setFormData({...formData, genre_ku: e.target.value})} 
-                      placeholder="نموونە: خەیاڵی"
-                      className="text-right"
-                      disabled={isSaving} 
+                      disabled={isSaving || readOnly} 
                     />
                     <div className="flex flex-col gap-1 text-start">
                       <label className="text-sm font-medium text-slate-600 dark:text-slate-300 ms-1">وەسف (کوردی)</label>
                       <textarea 
                         className="px-4 py-2 bg-white/80 dark:bg-slate-950/50 border border-slate-200 dark:border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500/50 min-h-[100px] text-slate-800 dark:text-white text-right disabled:opacity-50"
                         value={formData.description_ku || ''}
-                        onChange={e => setFormData({...formData, description_ku: e.target.value})}
+                        onChange={e => !readOnly && setFormData({...formData, description_ku: e.target.value})}
                         placeholder="پوختەی کتێب بە کوردی..."
-                        disabled={isSaving} 
+                        disabled={isSaving || readOnly} 
                       />
                     </div>
                   </div>
@@ -316,11 +309,24 @@ export const BookFormModal: React.FC<BookFormModalProps> = ({
           </div>
 
           <div className="p-4 border-t border-slate-100 dark:border-slate-800 bg-white/50 dark:bg-slate-800/50 flex justify-end gap-3 shrink-0">
-            <Button type="button" variant="secondary" onClick={onClose} disabled={isSaving}>{t('cancel')}</Button>
-            <Button type="submit" disabled={isSaving}>
-               {isSaving ? <Loader2 size={18} className="animate-spin mr-2" /> : <Save size={18} className="mr-2" />} 
-               {book ? t('save') : t('create')}
+            <Button type="button" variant="secondary" onClick={onClose} disabled={isSaving}>
+              {readOnly ? t('close') : t('cancel')}
             </Button>
+            {!readOnly && (
+              <Button type="submit" disabled={isSaving}>
+                 {isSaving ? <Loader2 size={18} className="animate-spin mr-2" /> : <Save size={18} className="mr-2" />} 
+                 {book ? t('save') : t('create')}
+              </Button>
+            )}
+            {readOnly && book && (
+              <Button type="button" onClick={() => {
+                // This will be handled by the parent component to switch to edit mode
+                onSave({});
+              }}>
+                <Edit2Icon />
+                <span className="ml-2">Enable Edit</span>
+              </Button>
+            )}
           </div>
         </form>
       </GlassCard>

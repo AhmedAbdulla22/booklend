@@ -30,6 +30,28 @@ export const UserManagement = () => {
     loadData();
   }, []);
 
+  // Refetch data when component regains visibility (fixes navigation issue)
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (!document.hidden) {
+        loadData();
+      }
+    };
+
+    // Also refetch when route changes back to this component
+    const handleRouteChange = () => {
+      loadData();
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    window.addEventListener('focus', handleRouteChange);
+
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('focus', handleRouteChange);
+    };
+  }, []);
+
   useEffect(() => {
     console.log('Notification state changed:', notification);
   }, [notification]);

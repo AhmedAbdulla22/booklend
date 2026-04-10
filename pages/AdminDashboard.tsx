@@ -51,6 +51,28 @@ export const AdminDashboard = () => {
     fetchData();
   }, []);
 
+  // Refetch data when component regains visibility (fixes navigation issue)
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (!document.hidden) {
+        fetchData();
+      }
+    };
+
+    // Also refetch when route changes back to this component
+    const handleRouteChange = () => {
+      fetchData();
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    window.addEventListener('focus', handleRouteChange);
+
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('focus', handleRouteChange);
+    };
+  }, []);
+
   const fetchData = async () => {
     setIsLoading(true);
     try {

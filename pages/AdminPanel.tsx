@@ -31,6 +31,7 @@ export const AdminPanel = () => {
   const [genre, setGenre] = useState('All');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingBook, setEditingBook] = useState<Book | null>(null);
+  const [isReadOnlyMode, setIsReadOnlyMode] = useState(false);
   const [loanStatusFilter, setLoanStatusFilter] = useState<LoanStatus | 'all'>('all');
 
   useEffect(() => {
@@ -63,6 +64,12 @@ export const AdminPanel = () => {
   };
 
   const handleSaveBook = async (bookData: Partial<Book>) => {
+    // Handle readOnly mode switching
+    if (isReadOnlyMode && Object.keys(bookData).length === 0) {
+      setIsReadOnlyMode(false);
+      return;
+    }
+    
     try {
       setIsSavingBook(true); // Disable modal buttons
       if (editingBook) {
@@ -77,6 +84,7 @@ export const AdminPanel = () => {
         alert(t('success_create'));
       }
       setIsModalOpen(false);
+      setIsReadOnlyMode(false);
       await fetchData();
     } catch (error) {
       console.error(error);
@@ -87,11 +95,13 @@ export const AdminPanel = () => {
 
   const openAddModal = () => {
     setEditingBook(null);
+    setIsReadOnlyMode(false);
     setIsModalOpen(true);
   };
 
   const openEditModal = (book: Book) => {
     setEditingBook(book);
+    setIsReadOnlyMode(true);
     setIsModalOpen(true);
   };
 
@@ -250,6 +260,7 @@ export const AdminPanel = () => {
           onClose={() => !isSavingBook && setIsModalOpen(false)} 
           onSave={handleSaveBook} 
           isSaving={isSavingBook}
+          readOnly={isReadOnlyMode}
         />
       )}
     </div>
