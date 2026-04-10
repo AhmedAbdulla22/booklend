@@ -8,7 +8,7 @@ import { GlassCard } from '../components/ui/GlassCard';
 import { Badge } from '../components/ui/Badge';
 import { SkeletonCard } from '../components/ui/SkeletonCard';
 import { db } from '../services/supabaseClient';
-import { Book, GENRES, Profile } from '../types';
+import { Book, GENRES, Profile, Loan, LoanStatus } from '../types';
 import { CONSTANTS, TRANSLATIONS } from '../constants';
 
 // Fix for TypeScript inference issues with motion components
@@ -32,44 +32,109 @@ const itemVariants = {
 export const BookCatalog = ({ user, onRent, onView }: { user: Profile, onRent: (book: Book) => void, onView: (book: Book) => void }) => {
   const { t, language, localize } = useLanguage();
   const [books, setBooks] = useState<Book[]>([]);
+  const [userLoans, setUserLoans] = useState<Loan[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState('');
   const [genre, setGenre] = useState('All');
 
+  // Check if user already has an active or pending loan for this book
+  const isAlreadyBorrowed = (bookId: string): boolean => {
+    return userLoans.some(loan => 
+      loan.book_id === bookId && 
+      (loan.status === LoanStatus.ACTIVE || loan.status === LoanStatus.PENDING)
+    );
+  };
+
+  const getExistingLoanStatus = (bookId: string): LoanStatus | null => {
+    const existingLoan = userLoans.find(loan => 
+      loan.book_id === bookId && 
+      (loan.status === LoanStatus.ACTIVE || loan.status === LoanStatus.PENDING)
+    );
+    return existingLoan?.status || null;
+  };
+
   useEffect(() => {
     setLoading(true);
-    db.getBooks()
-      .then(setBooks)
+    Promise.all([
+      db.getBooks(),
+      db.getLoans(user.id)
+    ])
+      .then(([booksData, loansData]) => {
+        setBooks(booksData);
+        setUserLoans(loansData);
+      })
       .finally(() => setLoading(false));
-  }, []);
+  }, [user.id]);
 
-  // Refetch data when component regains visibility (fixes navigation issue)
+  // Refetch data when component regains visibility (fixes navigation and app switching issues)
   useEffect(() => {
-    const handleVisibilityChange = () => {
-      if (!document.hidden) {
-        setLoading(true);
-        db.getBooks()
-          .then(setBooks)
-          .finally(() => setLoading(false));
-      }
-    };
+    let lastActiveTime = Date.now();
+    let inactivityTimer: NodeJS.Timeout;
 
-    // Also refetch when route changes back to this component
-    const handleRouteChange = () => {
+    const refreshData = () => {
       setLoading(true);
-      db.getBooks()
-        .then(setBooks)
+      Promise.all([
+        db.getBooks(),
+        db.getLoans(user.id)
+      ])
+        .then(([booksData, loansData]) => {
+          setBooks(booksData);
+          setUserLoans(loansData);
+        })
         .finally(() => setLoading(false));
     };
 
+    const handleVisibilityChange = () => {
+      if (!document.hidden) {
+        refreshData();
+      }
+    };
+
+    // Handle window focus (when switching back from other apps)
+    const handleWindowFocus = () => {
+      const now = Date.now();
+      // Only refresh if it's been more than 2 seconds since last active (prevents rapid refires)
+      if (now - lastActiveTime > 2000) {
+        refreshData();
+      }
+      lastActiveTime = now;
+    };
+
+    // Handle page reactivation (mouse movement after inactivity)
+    const handleUserInteraction = () => {
+      const now = Date.now();
+      if (now - lastActiveTime > 5000) { // 5 seconds of inactivity
+        refreshData();
+      }
+      lastActiveTime = now;
+    };
+
+    // Set up inactivity detection
+    const resetInactivityTimer = () => {
+      clearTimeout(inactivityTimer);
+      inactivityTimer = setTimeout(() => {
+        // Mark as inactive
+        lastActiveTime = Date.now() - 10000; // 10 seconds ago
+      }, 5000);
+    };
+
     document.addEventListener('visibilitychange', handleVisibilityChange);
-    window.addEventListener('focus', handleRouteChange);
+    window.addEventListener('focus', handleWindowFocus);
+    document.addEventListener('mousemove', handleUserInteraction);
+    document.addEventListener('keydown', handleUserInteraction);
+    document.addEventListener('click', handleUserInteraction);
+    
+    resetInactivityTimer();
 
     return () => {
       document.removeEventListener('visibilitychange', handleVisibilityChange);
-      window.removeEventListener('focus', handleRouteChange);
+      window.removeEventListener('focus', handleWindowFocus);
+      document.removeEventListener('mousemove', handleUserInteraction);
+      document.removeEventListener('keydown', handleUserInteraction);
+      document.removeEventListener('click', handleUserInteraction);
+      clearTimeout(inactivityTimer);
     };
-  }, []);
+  }, [user.id]);
 
   const allGenres = Array.from(new Set([...GENRES, ...books.map(b => b.genre)])).sort();
 
@@ -174,9 +239,24 @@ export const BookCatalog = ({ user, onRent, onView }: { user: Profile, onRent: (
                       
                       <div className="mt-auto pt-3 border-t border-slate-100 dark:border-slate-800 flex flex-col gap-3">
                         <div className="flex items-center justify-between text-xs md:text-sm">
-                          <span className={`flex items-center gap-1.5 font-medium ${book.available_copies > 0 ? 'text-green-600 dark:text-green-400' : 'text-red-500'}`}>
-                            <span className={`w-2 h-2 rounded-full ${book.available_copies > 0 ? 'bg-green-500' : 'bg-red-500'}`} />
-                            {book.available_copies > 0 ? t('available') : t('out_of_stock')}
+                          <span className={`flex items-center gap-1.5 font-medium ${
+                            isAlreadyBorrowed(book.id) 
+                              ? 'text-amber-600 dark:text-amber-400' 
+                              : book.available_copies > 0 
+                                ? 'text-green-600 dark:text-green-400' 
+                                : 'text-red-500'
+                          }`}>
+                            <span className={`w-2 h-2 rounded-full ${
+                              isAlreadyBorrowed(book.id) 
+                                ? 'bg-amber-500' 
+                                : book.available_copies > 0 
+                                  ? 'bg-green-500' 
+                                  : 'bg-red-500'
+                            }`} />
+                            {isAlreadyBorrowed(book.id) 
+                              ? (getExistingLoanStatus(book.id) === LoanStatus.PENDING ? t('already_requested') : t('in_library'))
+                              : (book.available_copies > 0 ? t('available') : t('out_of_stock'))
+                            }
                           </span>
                           <span className="font-bold text-emerald-600 dark:text-emerald-400">{t('currency')}{book.daily_rate}</span>
                         </div>
@@ -188,10 +268,13 @@ export const BookCatalog = ({ user, onRent, onView }: { user: Profile, onRent: (
                           <Button 
                             fullWidth 
                             className="text-xs md:text-sm h-10"
-                            disabled={book.available_copies === 0} 
+                            disabled={book.available_copies === 0 || isAlreadyBorrowed(book.id)} 
                             onClick={() => onRent(book)}
                           >
-                            {t('rent_now')}
+                            {isAlreadyBorrowed(book.id) 
+                              ? (getExistingLoanStatus(book.id) === LoanStatus.PENDING ? t('already_requested') : t('in_library'))
+                              : t('rent_now')
+                            }
                           </Button>
                         </div>
                       </div>

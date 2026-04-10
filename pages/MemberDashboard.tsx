@@ -117,6 +117,7 @@ export const MemberDashboard = () => {
         book={viewingBook} 
         onClose={() => setViewingBook(null)} 
         onRent={(book) => setSelectedBook(book)} 
+        loans={myLoans}
       />
     </div>
   );

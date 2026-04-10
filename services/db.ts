@@ -116,7 +116,13 @@ export const db = {
         .select()
         .single();
 
-      if (error) throw error;
+      if (error) {
+        // Handle unique constraint violation (error code 23505)
+        if (error.code === '23505') {
+          throw new Error('You already have an active request for this book');
+        }
+        throw error;
+      }
 
       // Log the request
       await addLog('log_rent_request', book.title, 'info', user?.full_name);

@@ -51,25 +51,60 @@ export const AdminDashboard = () => {
     fetchData();
   }, []);
 
-  // Refetch data when component regains visibility (fixes navigation issue)
+  // Refetch data when component regains visibility (fixes navigation and app switching issues)
   useEffect(() => {
+    let lastActiveTime = Date.now();
+    let inactivityTimer: NodeJS.Timeout;
+
     const handleVisibilityChange = () => {
       if (!document.hidden) {
         fetchData();
       }
     };
 
-    // Also refetch when route changes back to this component
-    const handleRouteChange = () => {
-      fetchData();
+    // Handle window focus (when switching back from other apps)
+    const handleWindowFocus = () => {
+      const now = Date.now();
+      // Only refresh if it's been more than 2 seconds since last active (prevents rapid refires)
+      if (now - lastActiveTime > 2000) {
+        fetchData();
+      }
+      lastActiveTime = now;
+    };
+
+    // Handle page reactivation (mouse movement after inactivity)
+    const handleUserInteraction = () => {
+      const now = Date.now();
+      if (now - lastActiveTime > 5000) { // 5 seconds of inactivity
+        fetchData();
+      }
+      lastActiveTime = now;
+    };
+
+    // Set up inactivity detection
+    const resetInactivityTimer = () => {
+      clearTimeout(inactivityTimer);
+      inactivityTimer = setTimeout(() => {
+        // Mark as inactive
+        lastActiveTime = Date.now() - 10000; // 10 seconds ago
+      }, 5000);
     };
 
     document.addEventListener('visibilitychange', handleVisibilityChange);
-    window.addEventListener('focus', handleRouteChange);
+    window.addEventListener('focus', handleWindowFocus);
+    document.addEventListener('mousemove', handleUserInteraction);
+    document.addEventListener('keydown', handleUserInteraction);
+    document.addEventListener('click', handleUserInteraction);
+    
+    resetInactivityTimer();
 
     return () => {
       document.removeEventListener('visibilitychange', handleVisibilityChange);
-      window.removeEventListener('focus', handleRouteChange);
+      window.removeEventListener('focus', handleWindowFocus);
+      document.removeEventListener('mousemove', handleUserInteraction);
+      document.removeEventListener('keydown', handleUserInteraction);
+      document.removeEventListener('click', handleUserInteraction);
+      clearTimeout(inactivityTimer);
     };
   }, []);
 

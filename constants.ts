@@ -151,10 +151,16 @@ export const TRANSLATIONS = {
     genre_psychology: 'Psychology',
     genre_romance: 'Romance',
     genre_sci_fi: 'Sci-Fi',
+    already_requested: 'Already Requested',
+    in_library: 'In Your Library',
+    duplicate_loan_warning: 'You already have an active request for this book',
+    error_duplicate_loan: 'You already have an active request for this book',
     cannot_delete_has_books: 'Cannot delete user. They have active or overdue books that must be returned first.',
+    existing_loan_message_arabic: 'You already have an active request for this book',
   },
   ar: {
     app_name: 'إعارة كتب',
+    existing_loan_message_arabic: 'لديك بالفعل طلب نشط لهذا الكتاب',
     dashboard: 'لوحة التحكم',
     catalog: 'المكتبة',
     my_loans: 'إعاراتي',
@@ -453,6 +459,10 @@ export const TRANSLATIONS = {
     genre_psychology: 'دەروونناسی',
     genre_romance: 'ڕۆمانسی',
     genre_sci_fi: 'خەیاڵی زانستی',
+    already_requested: 'پێشتر داواکراوە',
+    in_library: 'لە کتێبخانەکەتدا',
+    duplicate_loan_warning: 'پێشتر داواکاریەکی چالاکت هەیە بۆ ئەم کتێبە',
+    error_duplicate_loan: 'پێشتر داواکاریەکی چالاکت هەیە بۆ ئەم کتێبە',
     cannot_delete_has_books: 'ناتوانرێت بەکارهێنەر بسڕدرێتەوە. کتێبی چالاک یان دواکەوتوی هەیە کە پێویستە سەرەتا بگەڕێندرێتەوە.',
   }
 };

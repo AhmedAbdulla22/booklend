@@ -4,10 +4,10 @@ import { useLanguage } from '../context/LanguageContext';
 import { Button } from './ui/Button';
 import { GlassCard } from './ui/GlassCard';
 import { Badge } from './ui/Badge';
-import { Book } from '../types';
+import { Book, Loan, LoanStatus } from '../types';
 import { CONSTANTS, TRANSLATIONS } from '../constants';
 
-export const BookDetailsModal = ({ book, onClose, onRent }: { book: Book | null, onClose: () => void, onRent: (book: Book) => void }) => {
+export const BookDetailsModal = ({ book, onClose, onRent, loans }: { book: Book | null, onClose: () => void, onRent: (book: Book) => void, loans?: Loan[] }) => {
   const { t, localize } = useLanguage();
   
   // Helper to localize genre strings
@@ -16,6 +16,24 @@ export const BookDetailsModal = ({ book, onClose, onRent }: { book: Book | null,
     const translated = t(key);
     // If the translation key doesn't exist (returns the key itself), use the original string
     return translated === key ? g : translated;
+  };
+
+  // Check if user already has an active or pending loan for this book
+  const isAlreadyBorrowed = (bookId: string): boolean => {
+    if (!loans) return false;
+    return loans.some(loan => 
+      loan.book_id === bookId && 
+      (loan.status === LoanStatus.ACTIVE || loan.status === LoanStatus.PENDING)
+    );
+  };
+
+  const getExistingLoanStatus = (bookId: string): LoanStatus | null => {
+    if (!loans) return null;
+    const existingLoan = loans.find(loan => 
+      loan.book_id === bookId && 
+      (loan.status === LoanStatus.ACTIVE || loan.status === LoanStatus.PENDING)
+    );
+    return existingLoan?.status || null;
   };
   
   if (!book) return null;
@@ -87,21 +105,33 @@ export const BookDetailsModal = ({ book, onClose, onRent }: { book: Book | null,
             </div>
           </div>
 
-          <div className="p-6 border-t border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/30 flex gap-4 mt-auto">
+          <div className="p-6 border-t border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/30 flex gap-4 mt-auto relative">
             <Button variant="secondary" onClick={onClose} fullWidth className="h-12">
               {t('close')}
             </Button>
             <Button 
               fullWidth 
               className="h-12 text-lg shadow-emerald-500/20"
-              disabled={book.available_copies === 0} 
+              disabled={book.available_copies === 0 || isAlreadyBorrowed(book.id)} 
               onClick={() => {
-                onClose();
-                onRent(book);
+                if (!isAlreadyBorrowed(book.id)) {
+                  onClose();
+                  onRent(book);
+                }
               }}
             >
-              {t('rent_now')}
+              {isAlreadyBorrowed(book.id) 
+                ? (getExistingLoanStatus(book.id) === LoanStatus.PENDING ? t('already_requested') : t('in_library'))
+                : t('rent_now')
+              }
             </Button>
+            {isAlreadyBorrowed(book.id) && (
+              <div className="absolute -top-8 left-0 right-0 text-center">
+                <p className="text-xs text-amber-600 dark:text-amber-400 font-medium">
+                  {t('existing_loan_message_arabic')}
+                </p>
+              </div>
+            )}
           </div>
         </div>
       </GlassCard>
