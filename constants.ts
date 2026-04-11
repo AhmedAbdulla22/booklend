@@ -162,6 +162,13 @@ export const TRANSLATIONS = {
     late_return_message: 'You have missed the return deadline. Please return immediately to avoid additional penalties.',
     days_overdue: 'Days Overdue',
     total_penalty_fees: 'Total Penalty Fees',
+    penalty_amount: 'Penalty',
+    day: 'day', // مضاف
+    current_penalty: 'Current Penalty', // مضاف
+    total_accumulated: 'Total Accumulated', // مضاف
+    notify_me: 'Notify Me', // لميزة الإشعار بالتوفر
+    already_subscribed: 'Subscribed for notification',
+    notification_set_success: 'You will be notified when this book is available!',
   },
   ar: {
     app_name: 'إعارة كتب',
@@ -319,6 +326,13 @@ export const TRANSLATIONS = {
     late_return_message: 'لقد تجاوزت الموعد النهائي لإرجاع الكتاب. يرجى إرجاعه في أقرب وقت ممكن لتجنب غرامات إضافية.',
     days_overdue: 'أيام متأخرة',
     total_penalty_fees: 'إجمالي غرامات التأخير',
+    penalty_amount: 'الغرامة المستحقة',
+    day: 'يوم', // مضاف
+    current_penalty: 'الغرامة الحالية', // مضاف
+    total_accumulated: 'الإجمالي المتراكم', // مضاف
+    notify_me: 'أبلغني عند التوفر', // لميزة الإشعار بالتوفر
+    already_subscribed: 'مشترك في التنبيهات',
+    notification_set_success: 'سيتم إبلاغك فور توفر هذا الكتاب!',
   },
   ku: {
     app_name: 'BookLend',
@@ -479,10 +493,18 @@ export const TRANSLATIONS = {
     late_return_message: 'ئەم کتێبە دواکەوتوویە. تکایە لە کاتی زوودا بگەڕێنرێتەوە بۆ ڕێگەگرتن لە سزای زیاتر.',
     days_overdue: 'ڕۆژانی دواکەوتن',
     total_penalty_fees: 'کۆی سزای دواکەوتن',
+    penalty_amount: 'سزای دواکەوتن',
+    day: 'ڕۆژ', // مضاف
+    current_penalty: 'سزای ئێستا', // مضاف
+    total_accumulated: 'کۆی گشتی سزاکە', // مضاف
+    notify_me: 'ئاگادارم بکەرەوە کاتێک بەردەست بوو', // لميزة الإشعار بالتوفر
+    already_subscribed: 'ناوت تۆمارکراوە بۆ ئاگادارکردنەوە',
+    notification_set_success: 'ئاگادارت دەکەینەوە کاتێک ئەم کتێبە بەردەست دەبێت!',
   }
 };
 
 export const CONSTANTS = {
+  DAILY_LATE_FEE_DEFAULT: 500,
   LATE_PENALTY_FLAT: 5.00,
   LATE_PENALTY_DAILY: 1.00,
   DEFAULT_IMAGES: {
