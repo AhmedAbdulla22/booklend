@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Search, Info } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -11,7 +10,6 @@ import { db } from '../services/supabaseClient';
 import { Book, GENRES, Profile, Loan, LoanStatus } from '../types';
 import { CONSTANTS, TRANSLATIONS } from '../constants';
 
-// Fix for TypeScript inference issues with motion components
 const MotionDiv = motion.div;
 
 const containerVariants = {
@@ -37,7 +35,6 @@ export const BookCatalog = ({ user, onRent, onView }: { user: Profile, onRent: (
   const [filter, setFilter] = useState('');
   const [genre, setGenre] = useState('All');
 
-  // Check if user already has an active or pending loan for this book
   const isAlreadyBorrowed = (bookId: string): boolean => {
     return userLoans.some(loan => 
       loan.book_id === bookId && 
@@ -53,6 +50,8 @@ export const BookCatalog = ({ user, onRent, onView }: { user: Profile, onRent: (
     return existingLoan?.status || null;
   };
 
+  // 1. This is the ONLY useEffect you need for data fetching. 
+  // It runs once when the component mounts (when you open the dashboard).
   useEffect(() => {
     setLoading(true);
     Promise.all([
@@ -63,97 +62,12 @@ export const BookCatalog = ({ user, onRent, onView }: { user: Profile, onRent: (
         setBooks(booksData);
         setUserLoans(loansData);
       })
+      .catch((error) => console.error("Failed to load catalog:", error))
       .finally(() => setLoading(false));
   }, [user.id]);
 
-  // Refetch data when component regains visibility (conservative approach to prevent excessive refreshes)
-  useEffect(() => {
-    let lastActiveTime = Date.now();
-    let inactivityTimer: NodeJS.Timeout;
-    let isPageVisible = true;
-
-    const refreshData = () => {
-      setLoading(true);
-      Promise.all([
-        db.getBooks(),
-        db.getLoans(user.id)
-      ])
-        .then(([booksData, loansData]) => {
-          setBooks(booksData);
-          setUserLoans(loansData);
-        })
-        .finally(() => setLoading(false));
-    };
-
-    const handleVisibilityChange = () => {
-      const wasHidden = document.hidden;
-      isPageVisible = !document.hidden;
-      
-      // Only refresh if page was hidden and now visible (tab switching)
-      if (wasHidden && isPageVisible) {
-        const now = Date.now();
-        if (now - lastActiveTime > 3000) { // 3 second cooldown
-          refreshData();
-          lastActiveTime = now;
-        }
-      }
-    };
-
-    // Handle window focus (when switching back from other apps)
-    const handleWindowFocus = () => {
-      if (!isPageVisible) return; // Don't refresh if page is not visible
-      
-      const now = Date.now();
-      // Only refresh if it's been more than 5 seconds since last active
-      if (now - lastActiveTime > 5000) {
-        refreshData();
-        lastActiveTime = now;
-      }
-    };
-
-    // Handle page reactivation (only after significant inactivity)
-    const handleUserInteraction = () => {
-      if (!isPageVisible) return; // Don't refresh if page is not visible
-      
-      const now = Date.now();
-      // Only refresh after 30+ seconds of inactivity (app switching scenario)
-      if (now - lastActiveTime > 30000) {
-        refreshData();
-        lastActiveTime = now;
-      }
-    };
-
-    // Set up inactivity detection (longer threshold)
-    const resetInactivityTimer = () => {
-      clearTimeout(inactivityTimer);
-      inactivityTimer = setTimeout(() => {
-        // Mark as inactive after 30 seconds
-        lastActiveTime = Date.now() - 35000;
-      }, 30000);
-    };
-
-    document.addEventListener('visibilitychange', handleVisibilityChange);
-    window.addEventListener('focus', handleWindowFocus);
-    
-    // Only add user interaction events with throttling
-    let mouseMoveThrottle: NodeJS.Timeout;
-    const handleMouseMove = () => {
-      clearTimeout(mouseMoveThrottle);
-      mouseMoveThrottle = setTimeout(() => handleUserInteraction(), 1000);
-    };
-    
-    document.addEventListener('mousemove', handleMouseMove);
-    
-    resetInactivityTimer();
-
-    return () => {
-      document.removeEventListener('visibilitychange', handleVisibilityChange);
-      window.removeEventListener('focus', handleWindowFocus);
-      document.removeEventListener('mousemove', handleMouseMove);
-      clearTimeout(inactivityTimer);
-      clearTimeout(mouseMoveThrottle);
-    };
-  }, [user.id]);
+  // I have COMPLETELY REMOVED the second useEffect that listened for 
+  // 'visibilitychange', 'focus', and 'mousemove'. That was the culprit!
 
   const allGenres = Array.from(new Set([...GENRES, ...books.map(b => b.genre)])).sort();
 
@@ -165,11 +79,9 @@ export const BookCatalog = ({ user, onRent, onView }: { user: Profile, onRent: (
     return matchesGenre && matchesSearch;
   });
 
-  // Helper to localize genre strings for the filter bar
   const getLocalizedGenreLabel = (g: string) => {
     const key = `genre_${g.toLowerCase()}` as keyof typeof TRANSLATIONS['en'];
     const translated = t(key);
-    // If the translation key doesn't exist (returns the key itself), use the original string
     return translated === key ? g : translated;
   };
 
