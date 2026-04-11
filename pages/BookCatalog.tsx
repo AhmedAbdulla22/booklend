@@ -50,24 +50,28 @@ export const BookCatalog = ({ user, onRent, onView }: { user: Profile, onRent: (
     return existingLoan?.status || null;
   };
 
-  // 1. This is the ONLY useEffect you need for data fetching. 
-  // It runs once when the component mounts (when you open the dashboard).
+  // This is the ONLY useEffect needed. It fetches data ONCE when mounted.
   useEffect(() => {
+    let isMounted = true;
     setLoading(true);
+    
     Promise.all([
       db.getBooks(),
       db.getLoans(user.id)
     ])
       .then(([booksData, loansData]) => {
-        setBooks(booksData);
-        setUserLoans(loansData);
+        if (isMounted) {
+          setBooks(booksData);
+          setUserLoans(loansData);
+        }
       })
-      .catch((error) => console.error("Failed to load catalog:", error))
-      .finally(() => setLoading(false));
-  }, [user.id]);
+      .catch((err) => console.error(err))
+      .finally(() => {
+        if (isMounted) setLoading(false);
+      });
 
-  // I have COMPLETELY REMOVED the second useEffect that listened for 
-  // 'visibilitychange', 'focus', and 'mousemove'. That was the culprit!
+    return () => { isMounted = false; };
+  }, [user.id]);
 
   const allGenres = Array.from(new Set([...GENRES, ...books.map(b => b.genre)])).sort();
 
@@ -87,7 +91,6 @@ export const BookCatalog = ({ user, onRent, onView }: { user: Profile, onRent: (
 
   return (
     <div className="space-y-6 pb-20">
-      {/* Filters */}
       <GlassCard className="p-4 flex flex-col md:flex-row gap-4 items-center justify-between sticky top-20 z-30">
         <div className="relative w-full md:w-96">
           <Search className={`absolute top-1/2 -translate-y-1/2 text-slate-400 ${language === 'ar' || language === 'ku' ? 'right-3' : 'left-3'}`} size={18} />
@@ -116,7 +119,6 @@ export const BookCatalog = ({ user, onRent, onView }: { user: Profile, onRent: (
         </div>
       </GlassCard>
 
-      {/* Grid */}
       <MotionDiv 
         variants={containerVariants}
         initial="hidden"

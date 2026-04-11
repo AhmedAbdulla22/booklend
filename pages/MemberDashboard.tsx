@@ -165,22 +165,21 @@ export const MemberDashboard = () => {
         </Button>
       </div>
 
-      {view === 'catalog' && (
+      <div className={view === 'catalog' ? 'block' : 'hidden'}>
         <BookCatalog 
           user={user} 
           onRent={setSelectedBook} 
           onView={setViewingBook} 
         />
-      )}
+      </div>
 
-      {view === 'loans' && (
+      <div className={view === 'loans' ? 'block' : 'hidden'}>
         <LoansList 
           loans={myLoans} 
           isAdmin={false} 
-          // 3. Ensure action is blocked if already returning
           onAction={(id, action) => action === 'return' && !returningId && handleReturnBook(id)} 
         />
-      )}
+      </div>
 
       {selectedBook && (
         <RentalModal 
