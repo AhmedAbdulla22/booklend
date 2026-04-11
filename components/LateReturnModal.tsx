@@ -1,11 +1,11 @@
 import React from 'react';
-import { AlertTriangle, X, Calendar, DollarSign } from 'lucide-react';
+import { AlertTriangle, X, Calendar, DollarSign, TrendingUp } from 'lucide-react';
 import { useLanguage } from '../context/LanguageContext';
 import { Button } from './ui/Button';
 import { GlassCard } from './ui/GlassCard';
 import { Badge } from './ui/Badge';
 import { Loan } from '../types';
-import { TRANSLATIONS, CONSTANTS } from '../constants';
+import { TRANSLATIONS } from '../constants';
 
 interface LateReturnModalProps {
   isOpen: boolean;
@@ -30,49 +30,50 @@ export const LateReturnModal: React.FC<LateReturnModalProps> = ({
     switch (language) {
       case 'ar':
         return {
-          title: translations.late_return_title || ' ',
-          urgentText: translations.late_return_urgent || ' ',
+          title: translations.late_return_title || 'تنبيه تأخير',
+          urgentText: translations.late_return_urgent || 'عاجل',
           message: (bookTitle: string, penaltyFee: number) => 
-            translations.late_return_message || `(${bookTitle}). ${penaltyFee > 0 ? `(${penaltyFee}) ` : ''} `,
-          penaltyLabel: translations.late_fee,
-          daysOverdue: translations.days_overdue || ' ',
-          returnAction: translations.return_book,
-          dismissAction: translations.close
+            `لقد تجاوزت مهلة إرجاع كتاب (${bookTitle}). يرجى الإرجاع فوراً لتجنب زيادة الغرامات.`,
+          penaltyLabel: translations.late_fee || 'غرامة التأخير',
+          daysOverdue: translations.days_overdue || 'أيام تأخير',
+          dismissAction: translations.close || 'إغلاق',
+          dailyRateLabel: 'الغرامة اليومية'
         };
       case 'ku':
         return {
-          title: translations.late_return_title || ' ',
-          urgentText: translations.late_return_urgent || '',
+          title: translations.late_return_title || 'ئاگاداری دواکەوتن',
+          urgentText: translations.late_return_urgent || 'بەپەلە',
           message: (bookTitle: string, penaltyFee: number) => 
-            translations.late_return_message || `(${bookTitle}). ${penaltyFee > 0 ? `(${penaltyFee}) ` : ''} `,
-          penaltyLabel: translations.late_fee,
-          daysOverdue: translations.days_overdue || '',
-          returnAction: translations.return_book,
-          dismissAction: translations.close
+            `ماوەی گەڕاندنەوەی کتێبی (${bookTitle}) بەسەرچووە. تکایە بە زووترین کات بیگەڕێنەوە.`,
+          penaltyLabel: translations.late_fee || 'سزای دواکەوتن',
+          daysOverdue: translations.days_overdue || 'ڕۆژ دواکەوتووە',
+          dismissAction: translations.close || 'داخستن',
+          dailyRateLabel: 'سزای ڕۆژانە'
         };
       default:
         return {
           title: 'URGENT: Late Return Notice',
           urgentText: 'URGENT',
           message: (bookTitle: string, penaltyFee: number) => 
-            `You have missed the return deadline for book "${bookTitle}". ${penaltyFee > 0 ? `Current penalty fee: IQD ${penaltyFee}. Additional daily charges will apply until returned. ` : ''}Please return immediately to avoid further penalties.`,
-          penaltyLabel: translations.late_fee,
+            `You have missed the return deadline for book "${bookTitle}". Please return immediately to avoid further penalties.`,
+          penaltyLabel: 'Late Fee',
           daysOverdue: 'Days Overdue',
-          returnAction: translations.return_book,
-          dismissAction: 'I Understand'
+          dismissAction: 'I Understand',
+          dailyRateLabel: 'Daily Rate'
         };
     }
   };
 
   const modalContent = getModalContent();
-  const totalPenalty = lateLoans.reduce((sum, loan) => sum + (loan.penalty_fee || 0), 0);
+  
+  // Calculate total penalty based on DB values
+  const totalPenalty = lateLoans.reduce((sum, loan) => sum + (Number(loan.penalty_fee) || 0), 0);
 
   const calculateDaysOverdue = (dueDate: string) => {
     const now = new Date();
     const due = new Date(dueDate);
     const diffTime = Math.abs(now.getTime() - due.getTime());
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-    return diffDays;
+    return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
   };
 
   return (
@@ -97,59 +98,67 @@ export const LateReturnModal: React.FC<LateReturnModalProps> = ({
               </Badge>
             </div>
           </div>
-          <button 
-            onClick={onClose}
-            className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full transition-colors"
-          >
+          <button onClick={onClose} className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full transition-colors">
             <X size={20} className="text-slate-500 dark:text-slate-400" />
           </button>
         </div>
 
         {/* Alert Message */}
         <div className="mb-6 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
-          <p className="text-slate-700 dark:text-slate-300 leading-relaxed">
+          <p className="text-slate-700 dark:text-slate-300 text-sm leading-relaxed">
             {lateLoans.length === 1 
               ? modalContent.message(
-                  lateLoans[0].book?.title_ar || lateLoans[0].book?.title || 'Unknown Book',
-                  lateLoans[0].penalty_fee || 0
+                  lateLoans[0].book?.title_ar || lateLoans[0].book?.title || 'Book',
+                  Number(lateLoans[0].penalty_fee) || 0
                 )
               : language === 'ar' 
-                ? `(${lateLoans.length}) `
+                ? `لديك (${lateLoans.length}) كتب متأخرة. يرجى إعادتها فوراً.`
                 : language === 'ku'
-                ? `(${lateLoans.length}) `
-                : `You have ${lateLoans.length} overdue books. Please return them immediately to avoid additional penalties.`
+                ? `تۆ (${lateLoans.length}) کتێبی دواکەوتووت هەیە. تکایە بیگەڕێنەوە.`
+                : `You have ${lateLoans.length} overdue books. Please return them immediately.`
             }
           </p>
         </div>
 
         {/* Late Loans List */}
-        <div className="mb-6 space-y-3 max-h-64 overflow-y-auto">
+        <div className="mb-6 space-y-3 max-h-64 overflow-y-auto pr-2">
           {lateLoans.map((loan) => {
             const daysOverdue = calculateDaysOverdue(loan.due_date);
+            // Matches 'daily_rate' from your SQL schema
+            const bookDailyRate = Number(loan.book?.daily_rate) || 0; 
+
             return (
-              <div key={loan.id} className="p-3 bg-slate-50 dark:bg-slate-800/50 rounded-lg border border-slate-200 dark:border-slate-700">
-                <div className="flex items-center gap-3">
-                  <div className="w-12 h-16 bg-gradient-to-br from-red-400 to-red-600 rounded shadow-lg flex items-center justify-center flex-shrink-0">
-                    <span className="text-white font-bold text-xs text-center">
-                      {language === 'ar' ? ' ' : language === 'ku' ? ' ' : 'LATE'}
-                    </span>
-                  </div>
+              <div key={loan.id} className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-lg border border-slate-200 dark:border-slate-700">
+                <div className="flex justify-between items-start gap-4">
                   <div className="flex-1 min-w-0">
                     <h4 className="font-semibold text-slate-800 dark:text-white text-sm truncate">
                       {loan.book?.title_ar || loan.book?.title || 'Unknown Book'}
                     </h4>
-                    <div className="flex items-center gap-4 mt-1 text-xs text-slate-500 dark:text-slate-400">
-                      <span className="flex items-center gap-1">
-                        <Calendar size={12} />
-                        {daysOverdue} {modalContent.daysOverdue}
-                      </span>
-                      {loan.penalty_fee && loan.penalty_fee > 0 && (
-                        <span className="flex items-center gap-1">
-                          <DollarSign size={12} />
-                          {modalContent.penaltyLabel}: {TRANSLATIONS[language].currency}{loan.penalty_fee}
+                    
+                    <div className="grid grid-cols-2 gap-2 mt-3">
+                      <div className="flex items-center gap-2 text-xs text-slate-500">
+                        <Calendar size={14} className="text-red-500" />
+                        <span className="font-medium text-red-600 dark:text-red-400">
+                          {daysOverdue} {modalContent.daysOverdue}
                         </span>
-                      )}
+                      </div>
+                      <div className="flex items-center gap-2 text-xs text-slate-500">
+                        <TrendingUp size={14} className="text-emerald-500" />
+                        <span className="font-medium text-emerald-600">
+                          {modalContent.dailyRateLabel}: {TRANSLATIONS[language].currency}{bookDailyRate}
+                        </span>
+                      </div>
                     </div>
+                  </div>
+
+                  {/* Individual Book Penalty Total */}
+                  <div className="text-right">
+                    <p className="text-[10px] uppercase tracking-wider text-slate-400 font-bold">
+                      {modalContent.penaltyLabel}
+                    </p>
+                    <p className="text-lg font-black text-red-600 dark:text-red-500">
+                      {TRANSLATIONS[language].currency}{Number(loan.penalty_fee) || (daysOverdue * bookDailyRate)}
+                    </p>
                   </div>
                 </div>
               </div>
@@ -157,31 +166,28 @@ export const LateReturnModal: React.FC<LateReturnModalProps> = ({
           })}
         </div>
 
-        {/* Total Penalty Summary */}
+        {/* Total Summary */}
         {totalPenalty > 0 && (
-          <div className="mb-6 p-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg">
+          <div className="mb-6 p-4 bg-slate-900 dark:bg-white rounded-xl shadow-lg">
             <div className="flex justify-between items-center">
-              <span className="font-medium text-amber-800 dark:text-amber-200">
+              <span className="text-slate-400 dark:text-slate-500 font-medium text-sm">
                 {TRANSLATIONS[language].total_penalty_fees}
               </span>
-              <span className="font-bold text-amber-600 dark:text-amber-400">
+              <span className="text-2xl font-black text-white dark:text-slate-900">
                 {TRANSLATIONS[language].currency}{totalPenalty}
               </span>
             </div>
           </div>
         )}
 
-        {/* Action Buttons */}
-        <div className="flex gap-3">
-          <Button 
-            variant="primary" 
-            fullWidth 
-            onClick={onClose}
-            className="bg-red-600 hover:bg-red-700 text-white shadow-red-500/20"
-          >
-            {modalContent.dismissAction}
-          </Button>
-        </div>
+        <Button 
+          variant="primary" 
+          fullWidth 
+          onClick={onClose}
+          className="bg-red-600 hover:bg-red-700 text-white h-12 text-lg font-bold"
+        >
+          {modalContent.dismissAction}
+        </Button>
       </GlassCard>
     </div>
   );
