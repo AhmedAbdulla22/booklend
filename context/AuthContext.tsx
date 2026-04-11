@@ -1,10 +1,10 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, ReactNode, useRef } from 'react';
 import { Profile } from '../types';
 import { auth, supabase } from '../services/supabaseClient';
 
 interface AuthContextType {
   user: Profile | null;
-  loading: boolean; // Keep this ONLY for the initial app load
+  loading: boolean;
   login: (email: string, password?: string) => Promise<void>;
   signup: (email: string, fullName: string, password?: string) => Promise<void>;
   logout: () => Promise<void>;
@@ -16,24 +16,45 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<Profile | null>(null);
-  const [loading, setLoading] = useState(true); // Initial load flag
+  const [loading, setLoading] = useState(true);
+  
+  // We use a ref to track the ID without triggering re-renders or infinite loops
+  const currentUserId = useRef<string | null>(null);
 
   useEffect(() => {
+    let isMounted = true; 
+
+    // Helper function to fetch and set the profile
+    const fetchProfileAndSetUser = async (userId: string) => {
+      try {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', userId)
+          .single();
+          
+        if (profile && isMounted) {
+          currentUserId.current = userId; // Update our tracker
+          setUser(profile);
+        }
+      } catch (error) {
+        console.error("Error fetching profile", error);
+      }
+    };
+
     const getInitialSession = async () => {
       try {
         const { data: { session } } = await supabase.auth.getSession();
-        if (session?.user) {
-          const { data: profile } = await supabase
-            .from('profiles')
-            .select('*')
-            .eq('id', session.user.id)
-            .single();
-          if (profile) setUser(profile);
+        if (session?.user && isMounted) {
+          // Only fetch if it's a new user
+          if (currentUserId.current !== session.user.id) {
+             await fetchProfileAndSetUser(session.user.id);
+          }
         }
       } catch (error) {
         console.error('Auth Init Error:', error);
       } finally {
-        setLoading(false); // Initial load finished
+        if (isMounted) setLoading(false); 
       }
     };
 
@@ -41,24 +62,28 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (session?.user) {
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('*')
-          .eq('id', session.user.id)
-          .single();
-        if (profile) setUser(profile);
+        // This check STOPS the tab-switching refresh bug!
+        if (currentUserId.current !== session.user.id) {
+          await fetchProfileAndSetUser(session.user.id);
+        }
       } else {
-        setUser(null);
+        if (isMounted) {
+          currentUserId.current = null;
+          setUser(null);
+        }
       }
-      // Do not touch 'setLoading' here; it only matters for the first boot
     });
 
-    return () => subscription.unsubscribe();
-  }, []);
+    return () => {
+      isMounted = false;
+      subscription.unsubscribe();
+    };
+  }, []); // <-- EMPTY ARRAY! This guarantees the listener is only created ONCE.
 
   const login = async (email: string, password?: string) => {
     if (password) {
       const profile = await auth.signInWithPassword(email, password);
+      currentUserId.current = profile.id;
       setUser(profile);
     } else {
       await auth.signIn(email);
@@ -67,12 +92,20 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
   const signup = async (email: string, fullName: string, password?: string) => {
     const profile = await auth.signUp(email, fullName, password);
-    if (profile) setUser(profile);
+    if (profile) {
+      currentUserId.current = profile.id;
+      setUser(profile);
+    }
   };
 
   const logout = async () => {
-    await auth.signOut();
+    currentUserId.current = null;
     setUser(null);
+    try {
+      await auth.signOut();
+    } catch (error) {
+      console.warn("Backend signout issue (safe to ignore):", error);
+    }
   };
 
   const updateProfile = async (updatedData: Partial<Profile>) => {

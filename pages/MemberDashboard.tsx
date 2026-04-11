@@ -37,75 +37,30 @@ export const MemberDashboard = () => {
   const [showLateReturnModal, setShowLateReturnModal] = useState(false);
   const [lateLoans, setLateLoans] = useState<Loan[]>([]);
   // Monitor loans for expiration and late return alerts
-  useEffect(() => {
-    const checkExpiringSoon = () => {
-      myLoans.forEach(loan => {
-        // Only check active loans
-        if (loan.status !== 'active') return;
-        
-        const dueDate = new Date(loan.due_date);
-        const now = new Date();
-        const difference = dueDate.getTime() - now.getTime();
-        
-        // If the difference is positive and less than or equal to 86400000 milliseconds (1 day)
-        if (difference > 0 && difference <= 86400000) {
-          const bookTitle = loan.book?.title_ar || loan.book?.title || 'Unknown Book';
-          
-          // Show the custom expiration alert modal
-          setExpirationAlert({ isOpen: true, bookTitle });
-        }
-      });
-    };
+useEffect(() => {
+  if (!myLoans || myLoans.length === 0) return;
 
-    const checkLateReturns = () => {
-      const now = new Date();
-      console.log('Checking late returns for loans:', myLoans.length);
-      console.log('Current date:', now);
-      
-      const overdueLoans = myLoans.filter(loan => {
-        // Check active or overdue loans
-        if (loan.status !== 'active' && loan.status !== 'overdue') {
-          console.log(`Loan ${loan.id} status ${loan.status} - not checking`);
-          return false;
-        }
-        
-        const dueDate = new Date(loan.due_date);
-        console.log(`Loan ${loan.id} - Due: ${dueDate}, Now: ${now}, Is Late: ${now > dueDate}`);
-        // Check if current date is past the due date
-        return now > dueDate;
-      }).map(loan => {
-        // Calculate penalty fee for overdue loans using book's daily rate
-        const dueDate = new Date(loan.due_date);
-        const diffDays = Math.ceil((now.getTime() - dueDate.getTime()) / (1000 * 60 * 60 * 24));
-        const bookDailyRate = loan.book?.daily_rate || 0;
-        const calculatedPenalty = diffDays * bookDailyRate;
-        
-        // Use existing penalty_fee if available, otherwise use calculated penalty
-        const penaltyFee = loan.penalty_fee > 0 ? loan.penalty_fee : calculatedPenalty;
-        
-        console.log(`Loan ${loan.id} - Days overdue: ${diffDays}, Book daily rate: ${bookDailyRate}, Penalty: ${penaltyFee}`);
-        
-        return {
-          ...loan,
-          penalty_fee: penaltyFee
-        };
-      });
-      
-      console.log('Found overdue loans:', overdueLoans.length);
-      setLateLoans(overdueLoans);
-      
-      // Auto-show modal if there are overdue loans and modal isn't already open
-      if (overdueLoans.length > 0 && !showLateReturnModal) {
-        setShowLateReturnModal(true);
-        console.log('Auto-showing late return modal for', overdueLoans.length, 'overdue loans');
-      }
-    };
-    
-    if (myLoans.length > 0) {
-      checkExpiringSoon();
-      checkLateReturns();
+  const now = new Date();
+  
+  // 1. Check for expiring
+  const expiring = myLoans.find(l => l.status === 'active' && 
+    (new Date(l.due_date).getTime() - now.getTime()) <= 86400000);
+  
+  if (expiring && !expirationAlert.isOpen) {
+    setExpirationAlert({ isOpen: true, bookTitle: expiring.book?.title || 'Book' });
+  }
+
+  // 2. Check for overdue (Memoize the check to prevent the loop)
+  const overdue = myLoans.filter(l => (l.status === 'active' || l.status === 'overdue') && now > new Date(l.due_date));
+  
+  if (overdue.length > 0) {
+    // Only update if the count changed to prevent the infinite loop
+    if (lateLoans.length !== overdue.length) {
+      setLateLoans(overdue);
+      if (!showLateReturnModal) setShowLateReturnModal(true);
     }
-  }, [myLoans, language]);
+  }
+}, [myLoans.length]);
 
   const handleRentRequest = async (days: number) => {
     if (!selectedBook || !user) return;

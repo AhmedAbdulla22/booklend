@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { LayoutDashboard, BookOpen, Clock, AlertTriangle, DollarSign, Activity, Filter, FileText, CheckCircle, Search, Plus, Edit2, ArrowUpRight, List, Users, TrendingUp } from 'lucide-react';
@@ -17,11 +16,9 @@ export const AdminDashboard = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
   
-  // Helper to localize genre strings
   const getLocalizedGenreLabel = (g: string) => {
     const key = `genre_${g.toLowerCase()}` as keyof typeof TRANSLATIONS['en'];
     const translated = t(key);
-    // If the translation key doesn't exist (returns the key itself), use the original string
     return translated === key ? g : translated;
   };
   
@@ -31,6 +28,10 @@ export const AdminDashboard = () => {
   const [tab, setTab] = useState<'dashboard' | 'loans' | 'books' | 'logs'>('dashboard');
   const [isLoading, setIsLoading] = useState(true);
   
+  // ADDED: Local Loading States to prevent double-clicks
+  const [isSavingBook, setIsSavingBook] = useState(false);
+  const [processingLoanId, setProcessingLoanId] = useState<string | null>(null);
+
   // Book Management
   const [filter, setFilter] = useState('');
   const [genre, setGenre] = useState('All');
@@ -43,129 +44,89 @@ export const AdminDashboard = () => {
   // 1. ROLE CHECK: Redirect if not admin
   useEffect(() => {
     if (user && user.role !== Role.ADMIN) {
-      navigate('/dashboard'); // Redirect to member dashboard
+      navigate('/dashboard'); 
     }
   }, [user, navigate]);
 
+
   useEffect(() => {
-    fetchData();
-  }, []);
-
-  // Refetch data when component regains visibility (conservative approach to prevent excessive refreshes)
-  useEffect(() => {
-    let lastActiveTime = Date.now();
-    let inactivityTimer: NodeJS.Timeout;
-    let isPageVisible = true;
-
-    const handleVisibilityChange = () => {
-      const wasHidden = document.hidden;
-      isPageVisible = !document.hidden;
-      
-      // Only refresh if page was hidden and now visible (tab switching)
-      if (wasHidden && isPageVisible) {
-        const now = Date.now();
-        if (now - lastActiveTime > 3000) { // 3 second cooldown
-          fetchData();
-          lastActiveTime = now;
-        }
-      }
-    };
-
-    // Handle window focus (when switching back from other apps)
-    const handleWindowFocus = () => {
-      if (!isPageVisible) return; // Don't refresh if page is not visible
-      
-      const now = Date.now();
-      // Only refresh if it's been more than 5 seconds since last active
-      if (now - lastActiveTime > 5000) {
-        fetchData();
-        lastActiveTime = now;
-      }
-    };
-
-    // Handle page reactivation (only after significant inactivity)
-    const handleUserInteraction = () => {
-      if (!isPageVisible) return; // Don't refresh if page is not visible
-      
-      const now = Date.now();
-      // Only refresh after 30+ seconds of inactivity (app switching scenario)
-      if (now - lastActiveTime > 30000) {
-        fetchData();
-        lastActiveTime = now;
-      }
-    };
-
-    // Set up inactivity detection (longer threshold)
-    const resetInactivityTimer = () => {
-      clearTimeout(inactivityTimer);
-      inactivityTimer = setTimeout(() => {
-        // Mark as inactive after 30 seconds
-        lastActiveTime = Date.now() - 35000;
-      }, 30000);
-    };
-
-    document.addEventListener('visibilitychange', handleVisibilityChange);
-    window.addEventListener('focus', handleWindowFocus);
+    let isMounted = true;
     
-    // Only add user interaction events with throttling
-    let mouseMoveThrottle: NodeJS.Timeout;
-    const handleMouseMove = () => {
-      clearTimeout(mouseMoveThrottle);
-      mouseMoveThrottle = setTimeout(() => handleUserInteraction(), 1000);
-    };
-    
-    document.addEventListener('mousemove', handleMouseMove);
-    
-    resetInactivityTimer();
-
-    return () => {
-      document.removeEventListener('visibilitychange', handleVisibilityChange);
-      window.removeEventListener('focus', handleWindowFocus);
-      document.removeEventListener('mousemove', handleMouseMove);
-      clearTimeout(inactivityTimer);
-      clearTimeout(mouseMoveThrottle);
-    };
-  }, []);
-
-  const fetchData = async () => {
-    setIsLoading(true);
-    try {
+    const loadInitialData = async () => {
+      setIsLoading(true);
+      try {
         const [fetchedLoans, fetchedBooks, fetchedLogs] = await Promise.all([
           db.getLoans(),
           db.getBooks(),
           db.getActivityLogs()
         ]);
-        setLoans(fetchedLoans || []);
-        setBooks(fetchedBooks || []);
-        setLogs(fetchedLogs || []);
-    } finally {
-        setIsLoading(false);
+        if (isMounted) {
+          // SAFETY NET: Only update if the data actually exists. Never wipe it!
+          if (fetchedLoans) setLoans(fetchedLoans);
+          if (fetchedBooks) setBooks(fetchedBooks);
+          if (fetchedLogs) setLogs(fetchedLogs);
+        }
+      } catch (error) {
+        console.error("Network glitch ignored:", error);
+      } finally {
+        if (isMounted) setIsLoading(false);
+      }
+    };
+
+    loadInitialData();
+
+    return () => { isMounted = false; };
+  }, []);
+
+
+  const fetchData = async () => {
+    try {
+      const [fetchedLoans, fetchedBooks, fetchedLogs] = await Promise.all([
+        db.getLoans(),
+        db.getBooks(),
+        db.getActivityLogs()
+      ]);
+      if (fetchedLoans) setLoans(fetchedLoans);
+      if (fetchedBooks) setBooks(fetchedBooks);
+      if (fetchedLogs) setLogs(fetchedLogs);
+    } catch (error) {
+       console.error("Fetch data error ignored:", error);
     }
   };
 
   const handleLoanAction = async (id: string, action: string) => {
-    if (action === 'approve') {
-      await db.updateLoanStatus(id, LoanStatus.ACTIVE);
-    } else if (action === 'reject') {
-      await db.updateLoanStatus(id, LoanStatus.REJECTED);
-    } else if (action === 'return') {
-       await db.updateLoanStatus(id, LoanStatus.RETURNED);
+    try {
+      setProcessingLoanId(id); // Lock this specific loan
+      if (action === 'approve') {
+        await db.updateLoanStatus(id, LoanStatus.ACTIVE);
+      } else if (action === 'reject') {
+        await db.updateLoanStatus(id, LoanStatus.REJECTED);
+      } else if (action === 'return') {
+         await db.updateLoanStatus(id, LoanStatus.RETURNED);
+      }
+      await fetchData(); // Silently update data
+    } finally {
+      setProcessingLoanId(null); // Unlock
     }
-    fetchData();
   };
 
   const handleSaveBook = async (bookData: Partial<Book>) => {
-    if (editingBook) {
-      await db.updateBook({ ...editingBook, ...bookData } as Book);
-    } else {
-      await db.addBook({
-        ...bookData,
-        available_copies: bookData.total_copies || 0,
-        image_url: bookData.image_url || CONSTANTS.DEFAULT_IMAGES.BOOK
-      } as Book);
+    try {
+      setIsSavingBook(true); // Lock the modal
+      if (editingBook) {
+        await db.updateBook({ ...editingBook, ...bookData } as Book);
+      } else {
+        await db.addBook({
+          ...bookData,
+          available_copies: bookData.total_copies || 0,
+          image_url: bookData.image_url || CONSTANTS.DEFAULT_IMAGES.BOOK
+        } as Book);
+      }
+      setIsModalOpen(false);
+      await fetchData(); // Silently update data
+    } finally {
+      setIsSavingBook(false); // Unlock
     }
-    setIsModalOpen(false);
-    fetchData();
   };
 
   const openAddModal = () => {
@@ -178,7 +139,6 @@ export const AdminDashboard = () => {
     setIsModalOpen(true);
   };
 
-  // Real Stats Calculations
   const stats = useMemo(() => {
     const now = new Date();
     const currentMonth = now.getMonth();
@@ -293,9 +253,6 @@ export const AdminDashboard = () => {
         <button className={`px-4 py-2 rounded-lg text-sm font-medium transition-all text-slate-600 dark:text-slate-400 hover:bg-white/50 dark:hover:bg-slate-700/50`} onClick={() => navigate('/admin/users')}>
           <div className="flex items-center gap-2"><Users size={16} /> {t('users_tab')}</div>
         </button>
-        {/* <button className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${tab === 'logs' ? 'bg-white dark:bg-slate-700 shadow-sm text-emerald-600 dark:text-emerald-400' : 'text-slate-600 dark:text-slate-400 hover:bg-white/50 dark:hover:bg-slate-700/50'}`} onClick={() => setTab('logs')}>
-          <div className="flex items-center gap-2"><Activity size={16} /> {t('activity_logs')}</div>
-        </button> */}
       </GlassCard>
 
       {/* DASHBOARD TAB */}
@@ -394,7 +351,6 @@ export const AdminDashboard = () => {
         </div>
       )}
 
-      {/* Other tabs remain largely the same, but use localized strings */}
       {tab === 'loans' && (
         <div className="animate-slide-up space-y-6">
           <GlassCard className="p-4 flex flex-col md:flex-row gap-4 items-center justify-between">
@@ -411,7 +367,12 @@ export const AdminDashboard = () => {
                  {[1, 2, 3, 4].map(i => <div key={i} className="h-20 w-full bg-slate-200 dark:bg-slate-800 rounded-2xl animate-pulse" />)}
              </div>
           ) : (
-            <LoansList loans={filteredLoans} isAdmin={true} onAction={handleLoanAction} />
+            <LoansList 
+              loans={filteredLoans} 
+              isAdmin={true} 
+              // Prevent clicking multiple loans rapidly
+              onAction={(id, action) => !processingLoanId && handleLoanAction(id, action)} 
+            />
           )}
         </div>
       )}
@@ -463,35 +424,14 @@ export const AdminDashboard = () => {
         </div>
       )}
 
-      {/* {tab === 'logs' && (
-        <div className="animate-slide-up">
-           <GlassCard className="p-0 overflow-hidden divide-y divide-slate-100 dark:divide-slate-800">
-             {isLoading ? (
-                 [1, 2, 3, 4, 5, 6].map(i => <div key={i} className="h-16 w-full bg-slate-200 dark:bg-slate-800 animate-pulse" />)
-             ) : (
-                 logs.map(log => (
-                   <div key={log.id} className="p-4 flex justify-between hover:bg-slate-50/50 dark:hover:bg-slate-800/50">
-                      <div className="flex gap-3">
-                        <Activity size={16} className="mt-1 text-slate-400" />
-                        <div>
-                            <p className="text-sm font-bold text-slate-800 dark:text-white">{t(log.action as any)}</p>
-                            <p className="text-xs text-slate-500">{log.details}</p>
-                        </div>
-                      </div>
-                      <span className="text-xs text-slate-400 font-mono">{new Date(log.timestamp).toLocaleDateString()}</span>
-                   </div>
-                 ))
-             )}
-           </GlassCard>
-        </div>
-      )} */}
-
       {isModalOpen && (
         <BookFormModal 
           book={editingBook} 
-          onClose={() => setIsModalOpen(false)} 
+          // Prevent accidental close during save
+          onClose={() => !isSavingBook && setIsModalOpen(false)} 
           onSave={handleSaveBook} 
           availableGenres={allGenres}
+          isSaving={isSavingBook} // Pass loading state to disable fields
         />
       )}
     </div>

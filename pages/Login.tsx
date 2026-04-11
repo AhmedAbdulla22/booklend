@@ -13,16 +13,13 @@ export const Login: React.FC = () => {
   const { t } = useLanguage();
   const navigate = useNavigate();
   
-  // View state: 'login' or 'forgot_password'
   const [view, setView] = useState<'login' | 'forgot_password'>('login');
-  
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [resetSent, setResetSent] = useState(false);
 
-  // Redirect if already logged in
   useEffect(() => {
     if (user) {
       navigate(user.role === Role.ADMIN ? '/admin' : '/dashboard');
@@ -35,11 +32,13 @@ export const Login: React.FC = () => {
     setIsLoading(true);
     try {
       await login(email, password);
+      // SUCCESS: Do not set isLoading to false here. 
+      // Let it spin until AuthContext updates the user and the useEffect redirects.
     } catch (err: any) {
       console.error(err);
       setError(err.message || t('invalid_credentials'));
-    } finally {
-      setIsLoading(false);
+      // ERROR: Only turn off the spinner if the login failed.
+      setIsLoading(false); 
     }
   };
 

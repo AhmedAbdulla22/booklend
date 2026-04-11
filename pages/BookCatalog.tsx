@@ -50,28 +50,29 @@ export const BookCatalog = ({ user, onRent, onView }: { user: Profile, onRent: (
     return existingLoan?.status || null;
   };
 
-  // This is the ONLY useEffect needed. It fetches data ONCE when mounted.
-  useEffect(() => {
-    let isMounted = true;
-    setLoading(true);
-    
-    Promise.all([
-      db.getBooks(),
-      db.getLoans(user.id)
-    ])
-      .then(([booksData, loansData]) => {
-        if (isMounted) {
-          setBooks(booksData);
-          setUserLoans(loansData);
-        }
-      })
-      .catch((err) => console.error(err))
-      .finally(() => {
-        if (isMounted) setLoading(false);
-      });
+useEffect(() => {
+  let isMounted = true;
+  
+  // ONLY show skeletons if we have no books at all
+  if (books.length === 0) setLoading(true);
+  
+  Promise.all([
+    db.getBooks(),
+    db.getLoans(user.id)
+  ])
+    .then(([booksData, loansData]) => {
+      if (isMounted) {
+        setBooks(booksData || []);
+        setUserLoans(loansData || []);
+      }
+    })
+    .catch((err) => console.error(err))
+    .finally(() => {
+      if (isMounted) setLoading(false);
+    });
 
-    return () => { isMounted = false; };
-  }, [user.id]);
+  return () => { isMounted = false; };
+}, [user.id]);
 
   const allGenres = Array.from(new Set([...GENRES, ...books.map(b => b.genre)])).sort();
 
@@ -127,8 +128,12 @@ export const BookCatalog = ({ user, onRent, onView }: { user: Profile, onRent: (
       >
         <AnimatePresence mode="popLayout">
           {loading ? (
-            Array(10).fill(0).map((_, i) => <SkeletonCard key={i} />)
-          ) : filteredBooks.length > 0 ? (
+              Array(10).fill(0).map((_, i) => (
+                <motion.div key={`skel-${i}`} exit={{ opacity: 0 }}>
+                  <SkeletonCard />
+                </motion.div>
+              ))
+            ) : filteredBooks.length > 0 ? (
             filteredBooks.map(book => (
               <MotionDiv
                 key={book.id}

@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-// 1. ADDED Trash2 to the lucide-react imports
 import { Users, Shield, User, Search, CheckCircle, AlertCircle, Loader2, ArrowLeft, Trash2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -15,118 +14,50 @@ import { CONSTANTS } from '../constants';
 const MotionDiv = motion.div;
 
 export const UserManagement = () => {
-  const { t, dir, language } = useLanguage();
+  const { t, dir } = useLanguage();
   const navigate = useNavigate();
   const [profiles, setProfiles] = useState<Profile[]>([]);
   const [loans, setLoans] = useState<Loan[]>([]);
   const [loading, setLoading] = useState(true);
   const [updatingId, setUpdatingId] = useState<string | null>(null);
-  // 2. ADDED deletingId state
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [search, setSearch] = useState('');
   const [notification, setNotification] = useState<{message: string, type: 'success' | 'error'} | null>(null);
 
-  useEffect(() => {
-    loadData();
-  }, []);
-
-  // Refetch data when component regains visibility (conservative approach to prevent excessive refreshes)
-  useEffect(() => {
-    let lastActiveTime = Date.now();
-    let inactivityTimer: NodeJS.Timeout;
-    let isPageVisible = true;
-
-    const handleVisibilityChange = () => {
-      const wasHidden = document.hidden;
-      isPageVisible = !document.hidden;
-      
-      // Only refresh if page was hidden and now visible (tab switching)
-      if (wasHidden && isPageVisible) {
-        const now = Date.now();
-        if (now - lastActiveTime > 3000) { // 3 second cooldown
-          loadData();
-          lastActiveTime = now;
+useEffect(() => {
+    let isMounted = true;
+    
+    const loadData = async () => {
+      try {
+        setLoading(true);
+        const [profileData, loanData] = await Promise.all([
+          db.getProfiles(),
+          db.getLoans()
+        ]);
+        
+        if (isMounted) {
+          // SAFETY NET: Don't wipe the screen if Supabase hiccups
+          if (profileData) setProfiles(profileData);
+          if (loanData) setLoans(loanData);
         }
+      } catch (error) {
+        if (isMounted) {
+          setNotification({ message: "Network hiccup, please refresh.", type: 'error' });
+        }
+      } finally {
+        if (isMounted) setLoading(false);
       }
     };
 
-    // Handle window focus (when switching back from other apps)
-    const handleWindowFocus = () => {
-      if (!isPageVisible) return; // Don't refresh if page is not visible
-      
-      const now = Date.now();
-      // Only refresh if it's been more than 5 seconds since last active
-      if (now - lastActiveTime > 5000) {
-        loadData();
-        lastActiveTime = now;
-      }
-    };
+    loadData();
 
-    // Handle page reactivation (only after significant inactivity)
-    const handleUserInteraction = () => {
-      if (!isPageVisible) return; // Don't refresh if page is not visible
-      
-      const now = Date.now();
-      // Only refresh after 30+ seconds of inactivity (app switching scenario)
-      if (now - lastActiveTime > 30000) {
-        loadData();
-        lastActiveTime = now;
-      }
-    };
-
-    // Set up inactivity detection (longer threshold)
-    const resetInactivityTimer = () => {
-      clearTimeout(inactivityTimer);
-      inactivityTimer = setTimeout(() => {
-        // Mark as inactive after 30 seconds
-        lastActiveTime = Date.now() - 35000;
-      }, 30000);
-    };
-
-    document.addEventListener('visibilitychange', handleVisibilityChange);
-    window.addEventListener('focus', handleWindowFocus);
-    
-    // Only add user interaction events with throttling
-    let mouseMoveThrottle: NodeJS.Timeout;
-    const handleMouseMove = () => {
-      clearTimeout(mouseMoveThrottle);
-      mouseMoveThrottle = setTimeout(() => handleUserInteraction(), 1000);
-    };
-    
-    document.addEventListener('mousemove', handleMouseMove);
-    
-    resetInactivityTimer();
-
-    return () => {
-      document.removeEventListener('visibilitychange', handleVisibilityChange);
-      window.removeEventListener('focus', handleWindowFocus);
-      document.removeEventListener('mousemove', handleMouseMove);
-      clearTimeout(inactivityTimer);
-      clearTimeout(mouseMoveThrottle);
-    };
+    return () => { isMounted = false; };
   }, []);
-
-  useEffect(() => {
-    console.log('Notification state changed:', notification);
-  }, [notification]);
-
-  const loadData = async () => {
-    try {
-      setLoading(true);
-      const [profileData, loanData] = await Promise.all([
-        db.getProfiles(),
-        db.getLoans()
-      ]);
-      setProfiles(profileData);
-      setLoans(loanData);
-    } catch (error) {
-      setNotification({ message: "Error connecting to database.", type: 'error' });
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const getUserActivity = (userId: string) => {
+    // Safety check in case loans is somehow undefined
+    if (!loans) return 'idle';
+    
     const hasActiveLoan = loans.some(l => 
       l.user_id === userId && 
       (l.status === LoanStatus.ACTIVE || l.status === LoanStatus.OVERDUE)
@@ -153,72 +84,48 @@ export const UserManagement = () => {
     }
   };
 
-  // 3. ADDED handleDeleteUser function
-const handleDeleteUser = async (user: Profile) => {
-    console.log('handleDeleteUser called for user:', user);
-    
-    // 1. منع مسح الآدمن
+  const handleDeleteUser = async (user: Profile) => {
     if (user.role === Role.ADMIN) {
-      console.log('Cannot delete admin user');
       setNotification({ message: "Cannot delete an Admin user.", type: 'error' });
       setTimeout(() => setNotification(null), 3000);
       return;
     }
 
-    // 2. إضافة التحقق من وجود إعارات نشطة أو متأخرة للمستخدم
-    const hasActiveLoan = loans.some(l => 
+    const hasActiveLoan = loans && loans.some(l => 
       l.user_id === user.id && 
       (l.status === LoanStatus.ACTIVE || l.status === LoanStatus.OVERDUE)
     );
-    
-    console.log('Has active loan:', hasActiveLoan, 'for user:', user.id);
 
     if (hasActiveLoan) {
-      console.log('User has active loans, showing error message');
-      const notificationMessage = t('cannot_delete_has_books');
-      console.log('Setting notification with message:', notificationMessage);
       setNotification({ 
-        message: notificationMessage, 
+        message: t('cannot_delete_has_books'), 
         type: 'error' 
       });
-      setTimeout(() => {
-        console.log('Clearing notification after timeout');
-        setNotification(null);
-      }, 4000);
+      setTimeout(() => setNotification(null), 4000);
       return; 
     }
 
-    console.log('Showing confirmation dialog');
     if (!window.confirm(`Are you sure you want to delete ${user.full_name}? This action cannot be undone.`)) {
-      console.log('User cancelled deletion');
       return;
     }
 
-    console.log('User confirmed deletion, proceeding...');
     try {
       setDeletingId(user.id);
-      console.log('Calling db.deleteUser for user:', user.id);
       await db.deleteUser(user.id);
-      console.log('User deleted successfully from database');
       setProfiles(prev => prev.filter(p => p.id !== user.id));
-      console.log('Setting success notification');
       setNotification({ message: "User deleted successfully", type: 'success' });
-      setTimeout(() => {
-        console.log('Clearing success notification after timeout');
-        setNotification(null);
-      }, 3000);
+      setTimeout(() => setNotification(null), 3000);
     } catch (error) {
-      console.error('Error deleting user:', error);
       setNotification({ message: "Failed to delete user. Check database constraints.", type: 'error' });
     } finally {
       setDeletingId(null);
     }
   };
 
-  const filteredProfiles = profiles.filter(p => 
+  const filteredProfiles = profiles ? profiles.filter(p => 
     p.full_name.toLowerCase().includes(search.toLowerCase()) || 
     p.email.toLowerCase().includes(search.toLowerCase())
-  );
+  ) : [];
 
   return (
     <div className="space-y-6 max-w-5xl mx-auto pb-10">
@@ -244,23 +151,22 @@ const handleDeleteUser = async (user: Profile) => {
         </div>
       </div>
 
+      {/* 3. CRASH PREVENTION: Removed the fragment (<>) and added the key prop! */}
       <AnimatePresence>
         {notification && (
-          <>
-            {console.log('Rendering notification:', notification)}
-            <MotionDiv 
-              initial={{ opacity: 0, y: -20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -20 }}
-              className={`p-4 rounded-xl flex items-center gap-3 fixed top-4 right-4 z-50 shadow-lg ${
-                notification.type === 'success' ? 'bg-emerald-50 text-emerald-700 border border-emerald-100' : 'bg-red-50 text-red-700 border border-red-100'
-              }`}
-              style={{ position: 'fixed', top: '20px', right: '20px', zIndex: 9999 }}
-            >
-                {notification.type === 'success' ? <CheckCircle size={20} /> : <AlertCircle size={20} />}
-                <p className="font-medium text-sm">{notification.message}</p>
-            </MotionDiv>
-          </>
+          <MotionDiv 
+            key="notification-toast"
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            className={`p-4 rounded-xl flex items-center gap-3 fixed top-4 right-4 z-50 shadow-lg ${
+              notification.type === 'success' ? 'bg-emerald-50 text-emerald-700 border border-emerald-100' : 'bg-red-50 text-red-700 border border-red-100'
+            }`}
+            style={{ position: 'fixed', top: '20px', right: '20px', zIndex: 9999 }}
+          >
+              {notification.type === 'success' ? <CheckCircle size={20} /> : <AlertCircle size={20} />}
+              <p className="font-medium text-sm">{notification.message}</p>
+          </MotionDiv>
         )}
       </AnimatePresence>
 
@@ -313,7 +219,6 @@ const handleDeleteUser = async (user: Profile) => {
                       </div>
                     </td>
                     <td className={`px-6 py-4 ${dir === 'rtl' ? 'text-left' : 'text-right'}`}>
-                      {/* 4. UPDATED Action Buttons Layout */}
                       <div className={`flex items-center ${dir === 'rtl' ? 'justify-start' : 'justify-end'} gap-2`}>
                         <MotionDiv whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
                           <Button 
@@ -330,16 +235,12 @@ const handleDeleteUser = async (user: Profile) => {
                           </Button>
                         </MotionDiv>
 
-                        {/* 5. ADDED Delete Button (Only visible if not admin) */}
                         {p.role !== Role.ADMIN && (
                           <MotionDiv whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
                             <Button 
                               variant="secondary"
                               className={`!p-1.5 h-auto border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700 ${deletingId === p.id ? 'opacity-50 pointer-events-none' : ''}`}
-                              onClick={() => {
-                                console.log('Delete button clicked for user:', p);
-                                handleDeleteUser(p);
-                              }}
+                              onClick={() => handleDeleteUser(p)}
                               disabled={deletingId === p.id || updatingId === p.id}
                               title="Delete User"
                             >
