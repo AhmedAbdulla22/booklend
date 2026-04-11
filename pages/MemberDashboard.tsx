@@ -42,25 +42,36 @@ useEffect(() => {
 
   const now = new Date();
   
-  // 1. Check for expiring
-  const expiring = myLoans.find(l => l.status === 'active' && 
-    (new Date(l.due_date).getTime() - now.getTime()) <= 86400000);
-  
-  if (expiring && !expirationAlert.isOpen) {
-    setExpirationAlert({ isOpen: true, bookTitle: expiring.book?.title || 'Book' });
-  }
-
-  // 2. Check for overdue (Memoize the check to prevent the loop)
-  const overdue = myLoans.filter(l => (l.status === 'active' || l.status === 'overdue') && now > new Date(l.due_date));
+  // 1. Check for overdue first (Highest Priority)
+  const overdue = myLoans.filter(l => 
+    (l.status === 'active' || l.status === 'overdue') && 
+    now > new Date(l.due_date)
+  );
   
   if (overdue.length > 0) {
-    // Only update if the count changed to prevent the infinite loop
     if (lateLoans.length !== overdue.length) {
       setLateLoans(overdue);
       if (!showLateReturnModal) setShowLateReturnModal(true);
     }
+    // STOP HERE: If there are late books, don't show the expiration alert yet
+    return; 
   }
-}, [myLoans.length]);
+
+  // 2. Check for expiring (Only if no books are overdue)
+  const expiring = myLoans.find(l => {
+    if (l.status !== 'active') return false;
+    const timeDiff = new Date(l.due_date).getTime() - now.getTime();
+    // Must be in the FUTURE (positive) and within 24 hours
+    return timeDiff > 0 && timeDiff <= 86400000;
+  });
+  
+  if (expiring && !expirationAlert.isOpen) {
+    setExpirationAlert({ 
+      isOpen: true, 
+      bookTitle: expiring.book?.title || 'Book' 
+    });
+  }
+}, [myLoans.length, myLoans]); // Added myLoans to the dependency to catch status changes
 
   const handleRentRequest = async (days: number) => {
     if (!selectedBook || !user) return;
