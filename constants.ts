@@ -172,6 +172,7 @@ export const TRANSLATIONS = {
     member: 'Member',
     return_requested: 'Return Requested',
     confirm_return: 'Confirm Return',
+    overdue_by: 'Overdue by',
   },
   ar: {
     app_name: 'إعارة كتب',
@@ -339,6 +340,7 @@ export const TRANSLATIONS = {
     member: 'المستعير',
     return_requested: 'تم طلب الإرجاع',
     confirm_return: 'تأكيد الاستلام',
+    overdue_by: 'متأخر لدى',
   },
   ku: {
     app_name: 'BookLend',
@@ -509,6 +511,7 @@ export const TRANSLATIONS = {
     member: 'ئەندام',
     return_requested: 'داواکاری گەڕانەوە',
     confirm_return: 'تأکیدکردنەوەی وەرگرتن',
+    overdue_by: 'دواکەوتووە لای',
   }
 };
 

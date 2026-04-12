@@ -318,6 +318,26 @@ const handleLoanAction = async (id: string, action: string) => {
                  </GlassCard>
               ) : (
                 <div className="space-y-3">
+                  {/* Overdue loans */}
+                  {loans.filter(l => l.status === LoanStatus.OVERDUE || (l.status === LoanStatus.ACTIVE && new Date() > new Date(l.due_date))).map(loan => {
+                    const delayDays = Math.ceil((new Date().getTime() - new Date(loan.due_date).getTime()) / (1000 * 60 * 60 * 24));
+                    return (
+                      <GlassCard key={loan.id} className="p-4 flex items-center justify-between group border-l-4 border-red-500 bg-red-50/30">
+                        <div className="flex items-center gap-3">
+                          <div className="p-2 bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 rounded-lg">
+                            <AlertTriangle size={18} />
+                          </div>
+                          <div>
+                            <p className="font-bold text-slate-700 dark:text-slate-200">{localize(loan.book, 'title')}</p>
+                            <p className="text-[10px] text-red-600 font-bold uppercase tracking-wider">{t('overdue')} - {delayDays} {t('days')}</p>
+                            <p className="text-xs text-slate-500">{t('overdue_by')}: {loan.user?.full_name}</p>
+                          </div>
+                        </div>
+                      </GlassCard>
+                    );
+                  })}
+                  
+                  {/* Return requests */}
                   {loans.filter(l => l.status === LoanStatus.RETURNED && !l.is_confirmed).map(loan => (
                     <GlassCard key={loan.id} className="p-4 flex items-center justify-between group border-l-4 border-blue-500 bg-blue-50/30">
                       <div className="flex items-center gap-3">
