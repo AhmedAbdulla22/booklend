@@ -7,7 +7,7 @@ import { Button } from '../components/ui/Button';
 import { GlassCard } from '../components/ui/GlassCard';
 import { LoansList } from '../components/LoansList';
 import { BookFormModal } from '../components/BookFormModal';
-import { db } from '../services/supabaseClient';
+import { db } from '../services/db';
 import { Book, Loan, LoanStatus, GENRES, ActivityLog, Role } from '../types';
 import { CONSTANTS, TRANSLATIONS } from '../constants';
 
@@ -94,21 +94,21 @@ export const AdminDashboard = () => {
     }
   };
 
-  const handleLoanAction = async (id: string, action: string) => {
-    try {
-      setProcessingLoanId(id); // Lock this specific loan
-      if (action === 'approve') {
-        await db.updateLoanStatus(id, LoanStatus.ACTIVE);
-      } else if (action === 'reject') {
-        await db.updateLoanStatus(id, LoanStatus.REJECTED);
-      } else if (action === 'return') {
-         await db.updateLoanStatus(id, LoanStatus.RETURNED);
-      }
-      await fetchData(); // Silently update data
-    } finally {
-      setProcessingLoanId(null); // Unlock
+const handleLoanAction = async (id: string, action: string) => {
+  try {
+    setProcessingLoanId(id);
+    if (action === 'approve') {
+      await db.updateLoanStatus(id, LoanStatus.ACTIVE);
+    } else if (action === 'reject') {
+      await db.updateLoanStatus(id, LoanStatus.REJECTED);
+    } else if (action === 'confirm_return') {
+      await db.updateLoanStatus(id, LoanStatus.RETURNED); 
     }
-  };
+    await fetchData();
+  } finally {
+    setProcessingLoanId(null);
+  }
+};
 
   const handleSaveBook = async (bookData: Partial<Book>) => {
     try {
@@ -180,6 +180,7 @@ export const AdminDashboard = () => {
         pendingLoans: loans.filter(l => l.status === LoanStatus.PENDING).length,
         overdueLoans: loans.filter(l => l.status === LoanStatus.OVERDUE || (l.status === LoanStatus.ACTIVE && new Date() > new Date(l.due_date))).length,
         monthlyRevenue: currentRevenue,
+        pendingReturns: loans.filter(l => l.status === LoanStatus.RETURNED && !l.is_confirmed).length,
         revenueGrowth: growth,
         totalBooks: books.length,
         lowStock: books.filter(b => b.available_copies < 2)
@@ -241,10 +242,19 @@ export const AdminDashboard = () => {
         <button className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${tab === 'dashboard' ? 'bg-white dark:bg-slate-700 shadow-sm text-emerald-600 dark:text-emerald-400' : 'text-slate-600 dark:text-slate-400 hover:bg-white/50 dark:hover:bg-slate-700/50'}`} onClick={() => setTab('dashboard')}>
           <div className="flex items-center gap-2"><LayoutDashboard size={16} /> {t('dashboard')}</div>
         </button>
-        <button className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${tab === 'loans' ? 'bg-white dark:bg-slate-700 shadow-sm text-emerald-600 dark:text-emerald-400' : 'text-slate-600 dark:text-slate-400 hover:bg-white/50 dark:hover:bg-slate-700/50'}`} onClick={() => setTab('loans')}>
+        <button 
+          className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${tab === 'loans' ? 'bg-white dark:bg-slate-700 shadow-sm text-emerald-600 dark:text-emerald-400' : 'text-slate-600 dark:text-slate-400 hover:bg-white/50 dark:hover:bg-slate-700/50'}`} 
+          onClick={() => setTab('loans')}
+        >
           <div className="flex items-center gap-2">
-            <Clock size={16} /> {t('requests')}
-            {stats.pendingLoans > 0 && <span className="bg-red-500 text-white text-[10px] px-1.5 rounded-full">{stats.pendingLoans}</span>}
+            <Clock size={16} /> 
+            {t('requests')}
+            
+            {(stats.pendingLoans + stats.pendingReturns) > 0 && (
+              <span className="bg-red-500 text-white text-[10px] px-1.5 rounded-full animate-pulse">
+                {stats.pendingLoans + stats.pendingReturns}
+              </span>
+            )}
           </div>
         </button>
         <button className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${tab === 'books' ? 'bg-white dark:bg-slate-700 shadow-sm text-emerald-600 dark:text-emerald-400' : 'text-slate-600 dark:text-slate-400 hover:bg-white/50 dark:hover:bg-slate-700/50'}`} onClick={() => setTab('books')}>
@@ -308,16 +318,25 @@ export const AdminDashboard = () => {
                  </GlassCard>
               ) : (
                 <div className="space-y-3">
-                  {loans.filter(l => l.status === LoanStatus.PENDING).slice(0, 3).map(loan => (
-                    <GlassCard key={loan.id} className="p-4 flex items-center justify-between group">
+                  {loans.filter(l => l.status === LoanStatus.RETURNED && !l.is_confirmed).map(loan => (
+                    <GlassCard key={loan.id} className="p-4 flex items-center justify-between group border-l-4 border-blue-500 bg-blue-50/30">
                       <div className="flex items-center gap-3">
-                         <div className="p-2 bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 rounded-lg"><Clock size={18} /></div>
-                         <div>
-                            <p className="font-bold text-slate-700 dark:text-slate-200">{localize(loan.book, 'title')}</p>
-                            <p className="text-xs text-slate-500 dark:text-slate-400">Req: {loan.user?.full_name}</p>
-                         </div>
+                        <div className="p-2 bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-lg">
+                          <CheckCircle size={18} />
+                        </div>
+                        <div>
+                          <p className="font-bold text-slate-700 dark:text-slate-200">{localize(loan.book, 'title')}</p>
+                          <p className="text-[10px] text-blue-600 font-bold uppercase tracking-wider">{t('return_requested')}</p>
+                          <p className="text-xs text-slate-500">{loan.user?.full_name}</p>
+                        </div>
                       </div>
-                      <Button variant="secondary" className="!text-xs !py-1" onClick={() => setTab('loans')}>Review</Button>
+                      <Button 
+                        className="bg-blue-600 hover:bg-blue-700 !text-xs !py-1" 
+                        onClick={() => handleLoanAction(loan.id, 'confirm_return')}
+                        disabled={processingLoanId === loan.id}
+                      >
+                        {t('confirm_return')}
+                      </Button>
                     </GlassCard>
                   ))}
                 </div>

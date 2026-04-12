@@ -146,7 +146,6 @@ export const TRANSLATIONS = {
     genre_fable: 'Fable',
     genre_fantasy: 'Fantasy',
     genre_literature: 'Literature',
-    genre_philosophical: 'Philosophical',
     genre_poetry: 'Poetry',
     genre_psychology: 'Psychology',
     genre_romance: 'Romance',
@@ -169,6 +168,10 @@ export const TRANSLATIONS = {
     notify_me: 'Notify Me', // لميزة الإشعار بالتوفر
     already_subscribed: 'Subscribed for notification',
     notification_set_success: 'You will be notified when this book is available!',
+    delay_days: 'Delay Days',
+    member: 'Member',
+    return_requested: 'Return Requested',
+    confirm_return: 'Confirm Return',
   },
   ar: {
     app_name: 'إعارة كتب',
@@ -313,9 +316,8 @@ export const TRANSLATIONS = {
     genre_drama: 'دراما',
     genre_dystopian: 'ديستوبيا',
     genre_fable: 'أسطورة',
-    genre_fantasy: 'خيالي',
+    genre_fantasy: 'فانتازيا',
     genre_literature: 'أدب',
-    genre_philosophical: 'فلسفي',
     genre_poetry: 'شعر',
     genre_psychology: 'علم نفس',
     genre_romance: 'رومانسي',
@@ -333,6 +335,10 @@ export const TRANSLATIONS = {
     notify_me: 'أبلغني عند التوفر', // لميزة الإشعار بالتوفر
     already_subscribed: 'مشترك في التنبيهات',
     notification_set_success: 'سيتم إبلاغك فور توفر هذا الكتاب!',
+    delay_days: 'أيام التأخير',
+    member: 'المستعير',
+    return_requested: 'تم طلب الإرجاع',
+    confirm_return: 'تأكيد الاستلام',
   },
   ku: {
     app_name: 'BookLend',
@@ -478,7 +484,6 @@ export const TRANSLATIONS = {
     genre_fable: 'چیرۆک',
     genre_fantasy: 'فانتازیا',
     genre_literature: 'ئەدەب',
-    genre_philosophical: 'فەلسەفی',
     genre_poetry: 'شیعر',
     genre_psychology: 'دەروونناسی',
     genre_romance: 'ڕۆمانسی',
@@ -500,6 +505,10 @@ export const TRANSLATIONS = {
     notify_me: 'ئاگادارم بکەرەوە کاتێک بەردەست بوو', // لميزة الإشعار بالتوفر
     already_subscribed: 'ناوت تۆمارکراوە بۆ ئاگادارکردنەوە',
     notification_set_success: 'ئاگادارت دەکەینەوە کاتێک ئەم کتێبە بەردەست دەبێت!',
+    delay_days: 'ڕۆژانی دواکەوتن',
+    member: 'ئەندام',
+    return_requested: 'داواکاری گەڕانەوە',
+    confirm_return: 'تأکیدکردنەوەی وەرگرتن',
   }
 };
 

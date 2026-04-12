@@ -1,24 +1,61 @@
-import React from 'react';
-import { X } from 'lucide-react';
+import React, { useState, useEffect } from 'react'; // Added useState and useEffect
+import { X, Bell, Check } from 'lucide-react'; // Added Bell and Check icons
 import { useLanguage } from '../context/LanguageContext';
 import { Button } from './ui/Button';
 import { GlassCard } from './ui/GlassCard';
 import { Badge } from './ui/Badge';
-import { Book, Loan, LoanStatus } from '../types';
+import { Book, Loan, LoanStatus, Profile } from '../types'; // Added Profile type
 import { CONSTANTS, TRANSLATIONS } from '../constants';
+import { db } from '../services/db'; // Import your db service
+import { useAuth } from '../context/AuthContext'; // Import useAuth to get the current user
 
-export const BookDetailsModal = ({ book, onClose, onRent, loans }: { book: Book | null, onClose: () => void, onRent: (book: Book) => void, loans?: Loan[] }) => {
+export const BookDetailsModal = ({ 
+  book, 
+  onClose, 
+  onRent, 
+  loans 
+}: { 
+  book: Book | null, 
+  onClose: () => void, 
+  onRent: (book: Book) => void, 
+  loans?: Loan[] 
+}) => {
   const { t, localize } = useLanguage();
+  const { user } = useAuth(); // Get current user context
   
+  // New state for subscription logic
+  const [isSubscribed, setIsSubscribed] = useState(false);
+  const [loadingSub, setLoadingSub] = useState(false);
+
+  // Check subscription status when modal opens if book is out of stock
+  useEffect(() => {
+    if (book && user && book.available_copies === 0) {
+      db.checkSubscription(user.id, book.id)
+        .then(setIsSubscribed)
+        .catch(err => console.error("Subscription check failed", err));
+    }
+  }, [book, user]);
+
+  const handleNotifyMe = async () => {
+    if (!user || !book) return;
+    setLoadingSub(true);
+    try {
+      await db.subscribeToAvailability(user.id, book.id);
+      setIsSubscribed(true);
+    } catch (error) {
+      console.error('Error subscribing to notification:', error);
+    } finally {
+      setLoadingSub(false);
+    }
+  };
+
   // Helper to localize genre strings
   const getLocalizedGenreLabel = (g: string) => {
     const key = `genre_${g.toLowerCase()}` as keyof typeof TRANSLATIONS['en'];
     const translated = t(key);
-    // If the translation key doesn't exist (returns the key itself), use the original string
     return translated === key ? g : translated;
   };
 
-  // Check if user already has an active or pending loan for this book
   const isAlreadyBorrowed = (bookId: string): boolean => {
     if (!loans) return false;
     return loans.some(loan => 
@@ -50,7 +87,6 @@ export const BookDetailsModal = ({ book, onClose, onRent, loans }: { book: Book 
 
         {/* Image Section */}
         <div className="w-full md:w-5/12 bg-slate-100 dark:bg-slate-800 relative shrink-0 flex items-center justify-center p-6 md:p-0">
-          {/* Mobile: Constrained width, Desktop: Full cover */}
           <div className="relative shadow-2xl rounded-lg overflow-hidden w-40 md:w-full md:h-full aspect-[2/3] md:rounded-none">
               <img 
                 src={book.image_url || CONSTANTS.DEFAULT_IMAGES.BOOK} 
@@ -109,22 +145,41 @@ export const BookDetailsModal = ({ book, onClose, onRent, loans }: { book: Book 
             <Button variant="secondary" onClick={onClose} fullWidth className="h-12">
               {t('close')}
             </Button>
-            <Button 
-              fullWidth 
-              className="h-12 text-lg shadow-emerald-500/20"
-              disabled={book.available_copies === 0 || isAlreadyBorrowed(book.id)} 
-              onClick={() => {
-                if (!isAlreadyBorrowed(book.id)) {
-                  onClose();
-                  onRent(book);
+
+            {/* Logical branching for Rent Now vs Notify Me */}
+            {book.available_copies > 0 ? (
+              <Button 
+                fullWidth 
+                className="h-12 text-lg shadow-emerald-500/20"
+                disabled={isAlreadyBorrowed(book.id)} 
+                onClick={() => {
+                  if (!isAlreadyBorrowed(book.id)) {
+                    onClose();
+                    onRent(book);
+                  }
+                }}
+              >
+                {isAlreadyBorrowed(book.id) 
+                  ? (getExistingLoanStatus(book.id) === LoanStatus.PENDING ? t('already_requested') : t('in_library'))
+                  : t('rent_now')
                 }
-              }}
-            >
-              {isAlreadyBorrowed(book.id) 
-                ? (getExistingLoanStatus(book.id) === LoanStatus.PENDING ? t('already_requested') : t('in_library'))
-                : t('rent_now')
-              }
-            </Button>
+              </Button>
+            ) : (
+              <Button 
+                fullWidth 
+                variant={isSubscribed ? "secondary" : "primary"}
+                onClick={handleNotifyMe}
+                disabled={isSubscribed || loadingSub}
+                className="h-12 text-lg gap-2"
+              >
+                {isSubscribed ? (
+                  <><Check size={18} /> {t('already_subscribed')}</>
+                ) : (
+                  <><Bell size={18} /> {t('notify_me')}</>
+                )}
+              </Button>
+            )}
+
             {isAlreadyBorrowed(book.id) && (
               <div className="absolute -top-8 left-0 right-0 text-center">
                 <p className="text-xs text-amber-600 dark:text-amber-400 font-medium">

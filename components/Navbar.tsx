@@ -11,11 +11,13 @@ import { CONSTANTS } from '../constants';
 export const Navbar = ({ 
   user, 
   notifications, 
+  systemNotifications = [],
   onLogout,
   onProfileClick
 }: { 
   user: Profile, 
   notifications: Loan[], 
+  systemNotifications?: any[],
   onLogout: () => void,
   onProfileClick: () => void
 }) => {
@@ -24,6 +26,13 @@ export const Navbar = ({
   const { theme, toggleTheme } = useTheme();
   const [showNotifs, setShowNotifs] = useState(false);
   
+  const loanAlerts = notifications.filter(n => 
+    (n.status === LoanStatus.ACTIVE && new Date() > new Date(n.due_date)) || 
+    n.status === LoanStatus.OVERDUE
+  );
+  
+  const totalCount = loanAlerts.length + systemNotifications.length;
+
   // 1. Add local loading state
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   
@@ -64,7 +73,7 @@ export const Navbar = ({
 
   const [isLangMenuOpen, setIsLangMenuOpen] = useState(false);
 
-  return (
+return (
     <nav className="sticky top-4 z-50 mx-4">
       <GlassCard className="px-6 py-3 flex items-center justify-between">
         <div 
@@ -130,38 +139,63 @@ export const Navbar = ({
           <div className="relative">
             <Button variant="ghost" className="!p-2 relative" onClick={() => setShowNotifs(!showNotifs)}>
               <Bell size={20} />
-              {overdueCount > 0 && (
+              {totalCount > 0 && (
                 <span className="absolute top-1 right-1 w-3 h-3 bg-red-500 rounded-full border-2 border-white dark:border-slate-800 animate-pulse"></span>
               )}
             </Button>
             
             {showNotifs && (
               <div className={`absolute top-full mt-2 w-72 p-2 bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl border border-slate-200 dark:border-slate-700 rounded-xl shadow-2xl z-50 flex flex-col gap-2 ${dir === 'rtl' ? 'left-0' : 'right-0'}`}>
-                <div className="flex justify-between items-center px-2 py-1">
+                <div className="flex justify-between items-center px-2 py-1 border-b border-slate-100 dark:border-slate-800 mb-1">
                    <h4 className="text-sm font-bold text-slate-500 dark:text-slate-400">{t('notifications')}</h4>
-                   {overdueCount > 0 && (
-                     <span className="text-[10px] bg-red-100 dark:bg-red-900/30 text-red-600 px-2 py-0.5 rounded-full font-bold">
-                       {overdueCount} {t('overdue')}
+                   {totalCount > 0 && (
+                     <span className="text-[10px] bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 px-2 py-0.5 rounded-full font-bold">
+                       {totalCount}
                      </span>
                    )}
                 </div>
-                {overdueCount === 0 ? (
-                  <p className="text-sm text-slate-400 px-2 py-2 text-center">{t('no_notifications')}</p>
-                ) : (
-                  notifications.map(n => {
-                    const isOverdue = new Date() > new Date(n.due_date);
-                    if (!isOverdue) return null;
-                    return (
-                      <div key={n.id} className="text-xs p-2 bg-red-50 dark:bg-red-900/20 rounded-lg border border-red-100 dark:border-red-900/50 flex gap-2 items-start">
-                        <AlertCircle size={14} className="text-red-500 mt-0.5 shrink-0" />
-                        <div>
-                          <p className="font-semibold text-slate-700 dark:text-slate-200">{localize(n.book, 'title')}</p>
-                          <p className="text-red-500 font-bold">{t('overdue')}</p>
+
+                <div className="max-h-80 overflow-y-auto space-y-2 p-1">
+                  {totalCount === 0 ? (
+                    <p className="text-sm text-slate-400 py-4 text-center">{t('no_notifications')}</p>
+                  ) : (
+                    <>
+                      {/* 1. System Notifications (e.g., Book Availability Alerts) */}
+                      {systemNotifications.map(sn => {
+                        let displayMessage = sn.message;
+                        
+                        // إذا كانت الرسالة تحتوي على مفتاح الترجمة المخصص لنا
+                        if (sn.message.startsWith('notif_book_available|')) {
+                          const bookTitle = sn.message.split('|')[1]; // استخراج اسم الكتاب
+                          // نقوم بتركيب الجملة بناءً على اللغة المختارة
+                          displayMessage = language === 'ar' 
+                            ? `الكتاب "${bookTitle}" متوفر الآن للاستعارة!` 
+                            : language === 'ku'
+                            ? `کتێبی "${bookTitle}" ئێستا بەردەستە بۆ بەکرێگرتن!`
+                            : `The book "${bookTitle}" is now available for rent!`;
+                        }
+
+                        return (
+                          <div key={sn.id} className="text-xs p-2 bg-emerald-50 dark:bg-emerald-900/20 rounded-lg border border-emerald-100 flex gap-2">
+                            <Check size={14} className="text-emerald-500 mt-0.5 shrink-0" />
+                            <p className="text-slate-700 dark:text-slate-200 leading-tight">{displayMessage}</p>
+                          </div>
+                        );
+                      })}
+
+                      {/* 2. Loan Alerts (Overdue Books) */}
+                      {loanAlerts.map(n => (
+                        <div key={n.id} className="text-xs p-2 bg-red-50 dark:bg-red-900/20 rounded-lg border border-red-100 dark:border-red-900/50 flex gap-2 items-start animate-fade-in">
+                          <AlertCircle size={14} className="text-red-500 mt-0.5 shrink-0" />
+                          <div>
+                            <p className="font-semibold text-slate-700 dark:text-slate-200">{localize(n.book, 'title')}</p>
+                            <p className="text-red-500 font-bold">{t('overdue')}</p>
+                          </div>
                         </div>
-                      </div>
-                    )
-                  })
-                )}
+                      ))}
+                    </>
+                  )}
+                </div>
               </div>
             )}
           </div>
@@ -182,7 +216,6 @@ export const Navbar = ({
             </div>
           </div>
           
-          {/* 3. Disable button and show spinner during logout */}
           <Button 
             variant="secondary" 
             onClick={handleLogout} 

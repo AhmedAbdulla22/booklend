@@ -40,6 +40,7 @@ export interface Loan {
   start_date: string; // ISO Date string
   due_date: string;   // ISO Date string
   return_date?: string | null;
+  is_confirmed: boolean;
   total_fee: number;
   penalty_fee: number;
   status: LoanStatus;

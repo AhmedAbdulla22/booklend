@@ -135,78 +135,49 @@ export const db = {
     }
   },
 
-  updateLoanStatus: async (loanId: string, status: LoanStatus): Promise<Loan> => {
-    try {
-      // Get loan details for logging and book management
-      const { data: loanData, error: loanError } = await supabase
-        .from('loans')
-        .select('*, book:books(title), user:profiles(full_name)')
-        .eq('id', loanId)
-        .single();
 
-      if (loanError) throw loanError;
+updateLoanStatus: async (loanId: string, status: LoanStatus): Promise<Loan> => {
+    const { data: currentLoan } = await supabase
+      .from('loans')
+      .select('*, book:books(*)')
+      .eq('id', loanId)
+      .single();
 
-      // Update loan status
-      const { data, error } = await supabase
-        .from('loans')
-        .update({ status })
-        .eq('id', loanId)
-        .select()
-        .single();
+    let updatePayload: any = { status };
 
-      if (error) throw error;
-
-      // Handle book copy management and logging
-      if (status === LoanStatus.ACTIVE && loanData.status === LoanStatus.PENDING) {
-        // Decrease available copies
+    if (status === LoanStatus.RETURNED && currentLoan?.return_date) {
+        updatePayload.is_confirmed = true;
+        
         await supabase
           .from('books')
-          .update({ available_copies: loanData.book.available_copies - 1 })
-          .eq('id', loanData.book_id);
-        
-        await addLog('log_loan_approved', loanData.book.title, 'success', loanData.user?.full_name);
-      } else if (status === LoanStatus.REJECTED) {
-        await addLog('log_loan_rejected', loanData.book.title, 'danger', loanData.user?.full_name);
-      } else if (status === LoanStatus.RETURNED) {
-        // Increase available copies
-        await supabase
-          .from('books')
-          .update({ available_copies: loanData.book.available_copies + 1 })
-          .eq('id', loanData.book_id);
-
-        // Calculate penalty if overdue
-        const returnDate = new Date();
-        const dueDate = new Date(loanData.due_date);
-        let penaltyFee = 0;
-        
-        if (returnDate > dueDate) {
-          const diffDays = Math.ceil((returnDate.getTime() - dueDate.getTime()) / (1000 * 60 * 60 * 24));
-          // Use the book's daily rate for penalty calculation
-          const bookDailyRate = loanData.book?.daily_rate || 0;
-          penaltyFee = diffDays * bookDailyRate;
-        }
-
-        // Update return date and penalty
-        const { data: updatedLoan } = await supabase
-          .from('loans')
-          .update({ 
-            return_date: returnDate.toISOString(),
-            penalty_fee: penaltyFee
-          })
-          .eq('id', loanId)
-          .select()
-          .single();
-
-        await addLog('log_book_returned', loanData.book.title, 'info', loanData.user?.full_name);
-        return updatedLoan as Loan;
-      }
-
-      return data as Loan;
-    } catch (error) {
-      console.error('Error updating loan status:', error);
-      throw error;
+          .update({ available_copies: (currentLoan.book.available_copies || 0) + 1 })
+          .eq('id', currentLoan.book_id);
+    } 
+    else if (status === LoanStatus.RETURNED) {
+        updatePayload.return_date = new Date().toISOString();
+        updatePayload.is_confirmed = false;
     }
-  },
+
+    const { data, error } = await supabase
+      .from('loans')
+      .update(updatePayload)
+      .eq('id', loanId)
+      .select('*, book:books(*), user:profiles(*)')
+      .single();
+
+    if (error) throw error;
+    return data as Loan;
+},
+
+confirmReturn: async (loanId: string) => {
+  const { data, error } = await supabase
+    .from('loans')
+    .update({ is_confirmed: true }) 
+    .eq('id', loanId);
+    
+  if (error) throw error;
+  return data;
+},
 
   addBook: async (book: Omit<Book, 'id'>): Promise<Book> => {
     try {
@@ -259,7 +230,56 @@ export const db = {
       console.error('Error updating book:', error);
       throw error;
     }
+  },
+
+  subscribeToAvailability: async (userId: string, bookId: string): Promise<void> => {
+    try {
+      const { error } = await supabase
+        .from('availability_notifications')
+        .insert({ user_id: userId, book_id: bookId });
+      
+      if (error) {
+        if (error.code === '23505') return; // إذا كان مشتركاً بالفعل، نتجاهل الخطأ
+        throw error;
+      }
+    } catch (error) {
+      console.error('Error subscribing to notification:', error);
+      throw error;
+    }
+  },
+
+  checkSubscription: async (userId: string, bookId: string): Promise<boolean> => {
+    try {
+      const { data, error } = await supabase
+        .from('availability_notifications')
+        .select('id')
+        .eq('user_id', userId)
+        .eq('book_id', bookId)
+        .maybeSingle();
+      
+      if (error) throw error;
+      return !!data;
+    } catch (error) {
+      console.error('Error checking subscription:', error);
+      return false;
+    }
+  },
+
+  getNotifications: async (userId: string): Promise<any[]> => {
+  try {
+    const { data, error } = await supabase
+      .from('notifications')
+      .select('*')
+      .eq('user_id', userId)
+      .order('created_at', { ascending: false });
+
+    if (error) throw error;
+    return data || [];
+  } catch (error) {
+    console.error('Error fetching notifications:', error);
+    return [];
   }
+},
 };
 
 export const auth = {
