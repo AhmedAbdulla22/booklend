@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { LayoutDashboard, BookOpen, Clock, AlertTriangle, DollarSign, Activity, Filter, FileText, CheckCircle, Search, Plus, Edit2, ArrowUpRight, List, Users, TrendingUp } from 'lucide-react';
+import { LayoutDashboard, BookOpen, Clock, AlertTriangle, DollarSign, Activity, Filter, CheckCircle, Search, Plus, Edit2, ArrowUpRight, List, Users, Trash2 } from 'lucide-react';
 import { useLanguage } from '../context/LanguageContext';
 import { useAuth } from '../context/AuthContext';
 import { Button } from '../components/ui/Button';
@@ -28,26 +28,21 @@ export const AdminDashboard = () => {
   const [tab, setTab] = useState<'dashboard' | 'loans' | 'books' | 'logs'>('dashboard');
   const [isLoading, setIsLoading] = useState(true);
   
-  // ADDED: Local Loading States to prevent double-clicks
   const [isSavingBook, setIsSavingBook] = useState(false);
   const [processingLoanId, setProcessingLoanId] = useState<string | null>(null);
 
-  // Book Management
   const [filter, setFilter] = useState('');
   const [genre, setGenre] = useState('All');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingBook, setEditingBook] = useState<Book | null>(null);
 
-  // Loan Management
   const [loanStatusFilter, setLoanStatusFilter] = useState<LoanStatus | 'all'>('all');
 
-  // 1. ROLE CHECK: Redirect if not admin
   useEffect(() => {
     if (user && user.role !== Role.ADMIN) {
       navigate('/dashboard'); 
     }
   }, [user, navigate]);
-
 
   useEffect(() => {
     let isMounted = true;
@@ -61,7 +56,6 @@ export const AdminDashboard = () => {
           db.getActivityLogs()
         ]);
         if (isMounted) {
-          // SAFETY NET: Only update if the data actually exists. Never wipe it!
           if (fetchedLoans) setLoans(fetchedLoans);
           if (fetchedBooks) setBooks(fetchedBooks);
           if (fetchedLogs) setLogs(fetchedLogs);
@@ -78,7 +72,6 @@ export const AdminDashboard = () => {
     return () => { isMounted = false; };
   }, []);
 
-
   const fetchData = async () => {
     try {
       const [fetchedLoans, fetchedBooks, fetchedLogs] = await Promise.all([
@@ -94,25 +87,46 @@ export const AdminDashboard = () => {
     }
   };
 
-const handleLoanAction = async (id: string, action: string) => {
-  try {
-    setProcessingLoanId(id);
-    if (action === 'approve') {
-      await db.updateLoanStatus(id, LoanStatus.ACTIVE);
-    } else if (action === 'reject') {
-      await db.updateLoanStatus(id, LoanStatus.REJECTED);
-    } else if (action === 'confirm_return') {
-      await db.updateLoanStatus(id, LoanStatus.RETURNED); 
+  const handleLoanAction = async (id: string, action: string) => {
+    try {
+      setProcessingLoanId(id);
+      const adminName = user?.full_name || 'System'; 
+
+      if (action === 'approve') {
+        await db.updateLoanStatus(id, LoanStatus.ACTIVE, adminName); 
+      } else if (action === 'reject') {
+        await db.updateLoanStatus(id, LoanStatus.REJECTED, adminName); 
+      } else if (action === 'confirm_return') {
+        await db.updateLoanStatus(id, LoanStatus.RETURNED, adminName); 
+      }
+      await fetchData();
+    } finally {
+      setProcessingLoanId(null);
     }
-    await fetchData();
-  } finally {
-    setProcessingLoanId(null);
-  }
-};
+  };
+
+  const handleDeleteBook = async (bookId: string) => {
+    // using 'as any' to avoid TS errors if the key is missing momentarily
+    if (!window.confirm(t('confirm_delete_book' as any))) return;
+
+    try {
+      const adminName = user?.full_name || 'Admin';
+      await db.deleteBook(bookId, adminName);
+      
+      await fetchData();
+      alert(t('book_deleted_success' as any));
+    } catch (error: any) {
+      if (error.message === 'cannot_delete_active_book') {
+        alert(t('error_book_has_active_loans' as any));
+      } else {
+        alert(t('error_deleting_book' as any));
+      }
+    }
+  };
 
   const handleSaveBook = async (bookData: Partial<Book>) => {
     try {
-      setIsSavingBook(true); // Lock the modal
+      setIsSavingBook(true); 
       if (editingBook) {
         await db.updateBook({ ...editingBook, ...bookData } as Book);
       } else {
@@ -123,10 +137,21 @@ const handleLoanAction = async (id: string, action: string) => {
         } as Book);
       }
       setIsModalOpen(false);
-      await fetchData(); // Silently update data
+      await fetchData(); 
     } finally {
-      setIsSavingBook(false); // Unlock
+      setIsSavingBook(false); 
     }
+  };
+
+  const getReadableLog = (log: ActivityLog) => {
+    const time = new Date(log.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    const message = t(log.action as any) || log.action; 
+
+    return {
+      time,
+      fullMessage: `${message}: ${log.details}`,
+      borderColor: log.type === 'danger' ? '#ef4444' : log.type === 'success' ? '#10b981' : '#3b82f6'
+    };
   };
 
   const openAddModal = () => {
@@ -260,6 +285,9 @@ const handleLoanAction = async (id: string, action: string) => {
         <button className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${tab === 'books' ? 'bg-white dark:bg-slate-700 shadow-sm text-emerald-600 dark:text-emerald-400' : 'text-slate-600 dark:text-slate-400 hover:bg-white/50 dark:hover:bg-slate-700/50'}`} onClick={() => setTab('books')}>
           <div className="flex items-center gap-2"><BookOpen size={16} /> {t('manage_books')}</div>
         </button>
+        <button className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${tab === 'logs' ? 'bg-white dark:bg-slate-700 shadow-sm text-emerald-600 dark:text-emerald-400' : 'text-slate-600 dark:text-slate-400 hover:bg-white/50 dark:hover:bg-slate-700/50'}`} onClick={() => setTab('logs')}>
+          <div className="flex items-center gap-2"><Activity size={16} /> {t('activity_logs' as any)}</div>
+        </button>
         <button className={`px-4 py-2 rounded-lg text-sm font-medium transition-all text-slate-600 dark:text-slate-400 hover:bg-white/50 dark:hover:bg-slate-700/50`} onClick={() => navigate('/admin/users')}>
           <div className="flex items-center gap-2"><Users size={16} /> {t('users_tab')}</div>
         </button>
@@ -269,35 +297,10 @@ const handleLoanAction = async (id: string, action: string) => {
       {tab === 'dashboard' && (
         <div className="space-y-6 animate-slide-up">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            <StatCard 
-                title={t('monthly_revenue')} 
-                value={`${t('currency')}${stats.monthlyRevenue.toLocaleString()}`} 
-                icon={DollarSign} 
-                color="bg-emerald-500" 
-                subValue={stats.revenueGrowth} 
-                loading={isLoading}
-            />
-            <StatCard 
-                title={t('total_books')} 
-                value={stats.totalBooks} 
-                icon={BookOpen} 
-                color="bg-indigo-500" 
-                loading={isLoading}
-            />
-            <StatCard 
-                title={t('pending')} 
-                value={stats.pendingLoans} 
-                icon={Clock} 
-                color="bg-amber-500" 
-                loading={isLoading}
-            />
-            <StatCard 
-                title={t('overdue')} 
-                value={stats.overdueLoans} 
-                icon={AlertTriangle} 
-                color="bg-red-500" 
-                loading={isLoading}
-            />
+            <StatCard title={t('monthly_revenue')} value={`${t('currency')}${stats.monthlyRevenue.toLocaleString()}`} icon={DollarSign} color="bg-emerald-500" subValue={stats.revenueGrowth} loading={isLoading} />
+            <StatCard title={t('total_books')} value={stats.totalBooks} icon={BookOpen} color="bg-indigo-500" loading={isLoading} />
+            <StatCard title={t('pending')} value={stats.pendingLoans} icon={Clock} color="bg-amber-500" loading={isLoading} />
+            <StatCard title={t('overdue')} value={stats.overdueLoans} icon={AlertTriangle} color="bg-red-500" loading={isLoading} />
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -307,9 +310,7 @@ const handleLoanAction = async (id: string, action: string) => {
               </h3>
               {isLoading ? (
                   <div className="space-y-3">
-                      {[1, 2, 3].map(i => (
-                          <div key={i} className="h-20 w-full bg-slate-200 dark:bg-slate-800 rounded-2xl animate-pulse" />
-                      ))}
+                      {[1, 2, 3].map(i => <div key={i} className="h-20 w-full bg-slate-200 dark:bg-slate-800 rounded-2xl animate-pulse" />)}
                   </div>
               ) : stats.pendingLoans === 0 && stats.overdueLoans === 0 ? (
                  <GlassCard className="p-8 text-center text-slate-400 dark:text-slate-500">
@@ -318,7 +319,6 @@ const handleLoanAction = async (id: string, action: string) => {
                  </GlassCard>
               ) : (
                 <div className="space-y-3">
-                  {/* Overdue loans */}
                   {loans.filter(l => l.status === LoanStatus.OVERDUE || (l.status === LoanStatus.ACTIVE && new Date() > new Date(l.due_date))).map(loan => {
                     const delayDays = Math.ceil((new Date().getTime() - new Date(loan.due_date).getTime()) / (1000 * 60 * 60 * 24));
                     return (
@@ -330,14 +330,13 @@ const handleLoanAction = async (id: string, action: string) => {
                           <div>
                             <p className="font-bold text-slate-700 dark:text-slate-200">{localize(loan.book, 'title')}</p>
                             <p className="text-[10px] text-red-600 font-bold uppercase tracking-wider">{t('overdue')} - {delayDays} {t('days')}</p>
-                            <p className="text-xs text-slate-500">{t('overdue_by')}: {loan.user?.full_name}</p>
+                            <p className="text-xs text-slate-500">{t('overdue_by' as any)}: {loan.user?.full_name}</p>
                           </div>
                         </div>
                       </GlassCard>
                     );
                   })}
                   
-                  {/* Return requests */}
                   {loans.filter(l => l.status === LoanStatus.RETURNED && !l.is_confirmed).map(loan => (
                     <GlassCard key={loan.id} className="p-4 flex items-center justify-between group border-l-4 border-blue-500 bg-blue-50/30">
                       <div className="flex items-center gap-3">
@@ -350,11 +349,7 @@ const handleLoanAction = async (id: string, action: string) => {
                           <p className="text-xs text-slate-500">{loan.user?.full_name}</p>
                         </div>
                       </div>
-                      <Button 
-                        className="bg-blue-600 hover:bg-blue-700 !text-xs !py-1" 
-                        onClick={() => handleLoanAction(loan.id, 'confirm_return')}
-                        disabled={processingLoanId === loan.id}
-                      >
+                      <Button className="bg-blue-600 hover:bg-blue-700 !text-xs !py-1" onClick={() => handleLoanAction(loan.id, 'confirm_return')} disabled={processingLoanId === loan.id}>
                         {t('confirm_return')}
                       </Button>
                     </GlassCard>
@@ -390,6 +385,7 @@ const handleLoanAction = async (id: string, action: string) => {
         </div>
       )}
 
+      {/* LOANS TAB */}
       {tab === 'loans' && (
         <div className="animate-slide-up space-y-6">
           <GlassCard className="p-4 flex flex-col md:flex-row gap-4 items-center justify-between">
@@ -409,13 +405,13 @@ const handleLoanAction = async (id: string, action: string) => {
             <LoansList 
               loans={filteredLoans} 
               isAdmin={true} 
-              // Prevent clicking multiple loans rapidly
               onAction={(id, action) => !processingLoanId && handleLoanAction(id, action)} 
             />
           )}
         </div>
       )}
 
+      {/* BOOKS TAB */}
       {tab === 'books' && (
         <div className="animate-slide-up space-y-6">
           <GlassCard className="p-4 flex flex-col md:flex-row gap-4 justify-between">
@@ -453,9 +449,21 @@ const handleLoanAction = async (id: string, action: string) => {
                       <img src={book.image_url || CONSTANTS.DEFAULT_IMAGES.BOOK} alt="" className="w-16 h-24 object-cover rounded shadow-sm" />
                       <div><h4 className="font-bold text-slate-800 dark:text-white">{localize(book, 'title')}</h4><p className="text-sm text-slate-500">{localize(book, 'author')}</p></div>
                     </div>
+                    
+                    {/* EDIT AND DELETE BUTTONS ADDED HERE */}
                     <div className="flex gap-2">
-                       <Button variant="secondary" onClick={() => openEditModal(book)}><Edit2 size={16} /> Edit</Button>
+                       <Button variant="secondary" onClick={() => openEditModal(book)}>
+                         <Edit2 size={16} /> <span className="hidden md:inline">{t('edit' as any)}</span>
+                       </Button>
+                       <Button 
+                         variant="ghost" 
+                         className="text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20" 
+                         onClick={() => handleDeleteBook(book.id)}
+                       >
+                         <Trash2 size={16} /> <span className="hidden md:inline">{t('delete' as any)}</span>
+                       </Button>
                     </div>
+
                   </GlassCard>
                 ))
              )}
@@ -463,14 +471,50 @@ const handleLoanAction = async (id: string, action: string) => {
         </div>
       )}
 
+      {/* LOGS TAB */}
+      {tab === 'logs' && (
+        <div className="space-y-4 animate-slide-up">
+          <h3 className="font-bold text-lg flex items-center gap-2">
+            <Activity size={20} className="text-emerald-500" /> {t('activity_logs' as any)}
+          </h3>
+          <div className="grid gap-3">
+            {logs.length === 0 ? (
+              <GlassCard className="p-8 text-center text-slate-400">{t('no_logs' as any)}</GlassCard>
+            ) : (
+              logs.map(log => {
+                const formatted = getReadableLog(log);
+                return (
+                  <GlassCard 
+                    key={log.id} 
+                    className="p-4 flex items-center gap-4 border-l-4" 
+                    style={{ borderLeftColor: formatted.borderColor }}
+                  >
+                    <span className="text-xs font-mono text-slate-400 min-w-16">{formatted.time}</span>
+                    <div className="flex-1">
+                      <p className="text-sm font-medium text-slate-700 dark:text-slate-200">
+                        {formatted.fullMessage}
+                      </p>
+                      <p className="text-[10px] text-slate-400">{t('by' as any)}: {log.user_name}</p>
+                    </div>
+                    <span className="text-[10px] text-slate-400 bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded whitespace-nowrap hidden sm:inline-block">
+                      {new Date(log.timestamp).toLocaleDateString()}
+                    </span>
+                  </GlassCard>
+                );
+              })
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* MODAL */}
       {isModalOpen && (
         <BookFormModal 
           book={editingBook} 
-          // Prevent accidental close during save
           onClose={() => !isSavingBook && setIsModalOpen(false)} 
           onSave={handleSaveBook} 
           availableGenres={allGenres}
-          isSaving={isSavingBook} // Pass loading state to disable fields
+          isSaving={isSavingBook} 
         />
       )}
     </div>
